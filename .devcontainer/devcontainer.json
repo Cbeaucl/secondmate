@@ -1,0 +1,20 @@
+{
+    "name": "Spark SPA Dev",
+    "image": "mcr.microsoft.com/devcontainers/python:3.13",
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/node:1": {}
+    },
+    "forwardPorts": [
+        5173
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode"
+            ]
+        }
+    },
+    "postCreateCommand": "npm install"
+}

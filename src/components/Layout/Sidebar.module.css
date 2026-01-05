@@ -1,0 +1,113 @@
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.header {
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.title {
+    font-weight: 600;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+}
+
+.iconButton {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.iconButton:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.searchBox {
+    padding: 8px 12px;
+    position: relative;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.searchIcon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.searchInput {
+    width: 100%;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 8px 6px 30px;
+    color: var(--text-primary);
+    font-size: 12px;
+    outline: none;
+}
+
+.searchInput:focus {
+    border-color: var(--accent-primary);
+}
+
+.tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.treeItem {
+    display: flex;
+    flex-direction: column;
+}
+
+.treeRow {
+    display: flex;
+    align-items: center;
+    padding: 4px 12px;
+    cursor: pointer;
+    gap: 6px;
+    user-select: none;
+}
+
+.treeRow:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.treeChildren {
+    padding-left: 16px;
+}
+
+.icon {
+    opacity: 0.9;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

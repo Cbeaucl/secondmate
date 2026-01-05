@@ -1,0 +1,50 @@
+.gridContainer {
+    height: 100%;
+    width: 100%;
+    overflow: auto;
+    background-color: var(--bg-primary);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+.table th {
+    background-color: var(--bg-secondary);
+    position: sticky;
+    top: 0;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    padding: 8px 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    user-select: none;
+}
+
+.table td {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.table tr:hover td {
+    background-color: var(--bg-tertiary);
+}
+
+.headerCell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.typeLabel {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: normal;
+}
