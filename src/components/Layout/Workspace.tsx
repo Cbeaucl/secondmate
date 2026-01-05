@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { SqlEditor } from '../Editor/SqlEditor';
 import { DataGrid } from '../Results/DataGrid';
+import { SteamboatLoader } from '../SteamboatLoader';
 import { Play } from 'lucide-react';
 import styles from './Workspace.module.css';
 import { api, type QueryResult } from '../../services/api';
@@ -72,9 +73,7 @@ export const Workspace: React.FC = () => {
                             )}
 
                             {loading && (
-                                <div className="flex items-center justify-center h-full text-gray-500">
-                                    Executing query...
-                                </div>
+                                <SteamboatLoader />
                             )}
 
                             {hasRun && !loading && result?.error && (

@@ -1,0 +1,149 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    /* Removed background, padding, border-radius */
+    overflow: visible;
+    /* changed from hidden to visible incase puff goes out, though scene clips it */
+    position: relative;
+    min-height: 200px;
+    /* Ensure enough height for the boat */
+}
+
+.scene {
+    position: relative;
+    width: 20%;
+    /* Takes 20% of the width */
+    min-width: 150px;
+    /* Reasonable minimum size */
+    max-width: 300px;
+    /* Reasonable maximum size */
+    aspect-ratio: 4/3;
+    /* Maintain aspect ratio */
+}
+
+/* River */
+.river {
+    position: absolute;
+    bottom: 0;
+    left: -20%;
+    /* Extend bit wider than the scene to avoid gaps during animation */
+    width: 140%;
+    height: 20%;
+    /* Responsive height relative to scene */
+    /* Removed solid background, focusing on waves */
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    pointer-events: none;
+}
+
+.wave {
+    width: 20%;
+    height: 30%;
+    background: #60a5fa;
+    /* Blue-400 - lighter simplified wave */
+    border-radius: 50%;
+    opacity: 0.6;
+    animation: waveMove 2s ease-in-out infinite alternate;
+}
+
+.wave:nth-child(even) {
+    animation-delay: 1s;
+    background: #93c5fd;
+    /* Blue-300 */
+}
+
+/* Boat Container */
+.boatContainer {
+    position: absolute;
+    bottom: 15%;
+    /* Sit just above the river */
+    left: 50%;
+    width: 80%;
+    /* Boat takes up most of the scene width */
+    transform: translateX(-50%);
+    animation: bob 2s ease-in-out infinite;
+    z-index: 10;
+}
+
+/* Smoke Stack */
+.smoke {
+    position: absolute;
+    top: -10%;
+    left: 50%;
+    width: 8%;
+    height: 8%;
+    background: #cbd5e1;
+    /* Slate-300 */
+    border-radius: 50%;
+    opacity: 0;
+    animation: puff 2s infinite;
+}
+
+.smoke:nth-child(2) {
+    animation-delay: 0.5s;
+}
+
+.smoke:nth-child(3) {
+    animation-delay: 1s;
+}
+
+.text {
+    margin-top: 1rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 600;
+    color: #1e40af;
+    letter-spacing: 1px;
+    animation: pulse 1.5s ease-in-out infinite;
+    text-align: center;
+}
+
+@keyframes waveMove {
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes bob {
+
+    0%,
+    100% {
+        transform: translateX(-50%) translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateX(-50%) translateY(-2%) rotate(1deg);
+    }
+}
+
+@keyframes puff {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translateY(-300%) scale(3);
+        opacity: 0;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
