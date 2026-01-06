@@ -5,9 +5,10 @@ import styles from './SqlEditor.module.css';
 interface SqlEditorProps {
     initialValue?: string;
     onChange?: (value: string | undefined) => void;
+    onRunQuery?: () => void;
 }
 
-export const SqlEditor: React.FC<SqlEditorProps> = ({ initialValue = '-- Write your SparkSQL here\nSELECT * FROM spark_catalog.default.sales LIMIT 100;', onChange }) => {
+export const SqlEditor: React.FC<SqlEditorProps> = ({ initialValue = '-- Write your SparkSQL here\nSELECT * FROM spark_catalog.default.sales LIMIT 100;', onChange, onRunQuery }) => {
     const editorRef = useRef<any>(null);
 
     const handleEditorDidMount: OnMount = (editor, monaco) => {
@@ -33,6 +34,13 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({ initialValue = '-- Write y
         });
 
         monaco.editor.setTheme('spark-dark');
+
+        // Add command for Ctrl+Enter (or Cmd+Enter on Mac)
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+            if (onRunQuery) {
+                onRunQuery();
+            }
+        });
     };
 
     return (

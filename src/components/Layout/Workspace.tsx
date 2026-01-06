@@ -47,7 +47,11 @@ export const Workspace: React.FC = () => {
             <div className={styles.content}>
                 <PanelGroup direction="vertical">
                     <Panel defaultSize={50} minSize={20}>
-                        <SqlEditor initialValue={query} onChange={(val) => setQuery(val || '')} />
+                        <SqlEditor
+                            initialValue={query}
+                            onChange={(val) => setQuery(val || '')}
+                            onRunQuery={handleRunQuery}
+                        />
                     </Panel>
                     <PanelResizeHandle className={styles.resizeHandle} />
                     <Panel defaultSize={50} minSize={20}>
