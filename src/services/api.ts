@@ -43,6 +43,13 @@ export const api = {
         if (!response.ok) throw new Error('Failed to fetch tables');
         const data = await response.json();
         return data.tables;
+    },
+
+    searchCatalog: async (query: string): Promise<any[]> => {
+        const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
+        if (!response.ok) throw new Error('Failed to search catalog');
+        const data = await response.json();
+        return data.results;
     }
 };
 

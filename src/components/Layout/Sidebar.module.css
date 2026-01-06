@@ -55,10 +55,23 @@
     background-color: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    padding: 6px 8px 6px 30px;
+    padding: 6px 30px 6px 30px;
     color: var(--text-primary);
     font-size: 12px;
     outline: none;
+}
+
+.clearIcon {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.clearIcon:hover {
+    color: var(--text-primary);
 }
 
 .searchInput:focus {
@@ -110,4 +123,33 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+.tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
+}
+
+.tab {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+}
+
+.activeTab {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+    background-color: var(--bg-primary);
 }

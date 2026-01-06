@@ -148,3 +148,51 @@ def get_info(spark: SparkSession = Depends(get_spark_session)):
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.get("/search")
+def search_catalog(q: str, spark: SparkSession = Depends(get_spark_session)):
+    """Search for catalogs, namespaces, and tables matching the query."""
+    query = q.lower()
+    results = []
+
+    try:
+        # 1. Search Catalogs
+        df_catalogs = spark.sql("SHOW CATALOGS")
+        catalogs = [row.catalog for row in df_catalogs.collect()]
+        
+        for cat in catalogs:
+            if query in cat.lower():
+                results.append({"type": "catalog", "catalog": cat, "name": cat})
+            
+            try:
+                # 2. Search Namespaces within Catalog
+                df_ns = spark.sql(f"SHOW NAMESPACES IN {cat}")
+                namespaces = [row.namespace for row in df_ns.collect()]
+                
+                for ns in namespaces:
+                    if query in ns.lower():
+                        results.append({"type": "namespace", "catalog": cat, "namespace": ns, "name": ns})
+                    
+                    try:
+                        # 3. Search Tables within Namespace
+                        df_tables = spark.sql(f"SHOW TABLES IN {cat}.{ns}")
+                        tables = [row.tableName for row in df_tables.collect()]
+                        
+                        for table in tables:
+                            if query in table.lower():
+                                results.append({
+                                    "type": "table", 
+                                    "catalog": cat, 
+                                    "namespace": ns, 
+                                    "table": table,
+                                    "name": table
+                                })
+                    except Exception:
+                        continue # Ignore individual failures
+            except Exception:
+                continue
+
+    except Exception as e:
+        return {"results": [], "error": str(e)}
+
+    return {"results": results}
