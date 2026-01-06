@@ -124,10 +124,7 @@ export const Sidebar: React.FC = () => {
     return (
         <div className={styles.sidebar}>
             <div className={styles.header}>
-                <div className={styles.title}>Connections</div>
-                <div className={styles.actions}>
-                    <button className={styles.iconButton} title="New Connection">+</button>
-                </div>
+                <div className={styles.title}>Data Catalog</div>
             </div>
 
             <div className={styles.tabs}>

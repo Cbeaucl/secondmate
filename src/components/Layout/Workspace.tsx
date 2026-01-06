@@ -1,5 +1,5 @@
 // Workspace.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { SqlEditor } from '../Editor/SqlEditor';
 import { DataGrid } from '../Results/DataGrid';
@@ -40,8 +40,7 @@ export const Workspace: React.FC = () => {
                     <Play size={14} fill="currentColor" />
                     <span>{loading ? 'Running...' : 'Run'}</span>
                 </button>
-                <div className={styles.divider} />
-                <span className={styles.tabTitle}>Query 1.sql</span>
+
             </div>
 
             <div className={styles.content}>
