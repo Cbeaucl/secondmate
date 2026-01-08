@@ -9,6 +9,13 @@ export interface QueryResult {
     error?: string;
 }
 
+export interface SystemInfo {
+    app_name: string;
+    spark_version: string;
+    master: string;
+    python_version: string;
+}
+
 const API_BASE_URL = '/api'; // Proxied by Vite
 
 export const api = {
@@ -50,6 +57,12 @@ export const api = {
         if (!response.ok) throw new Error('Failed to search catalog');
         const data = await response.json();
         return data.results;
+    },
+
+    getSystemInfo: async (): Promise<SystemInfo> => {
+        const response = await fetch(`${API_BASE_URL}/info`);
+        if (!response.ok) throw new Error('Failed to fetch system info');
+        return await response.json();
     }
 };
 
