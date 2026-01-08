@@ -11,6 +11,11 @@ interface SqlEditorProps {
 export const SqlEditor: React.FC<SqlEditorProps> = ({ initialValue = '-- Write your SparkSQL here\nSELECT * FROM spark_catalog.default.sales LIMIT 100;', onChange, onRunQuery }) => {
     const editorRef = useRef<any>(null);
 
+    const onRunQueryRef = useRef(onRunQuery);
+
+    // Keep the ref updated with the latest callback
+    onRunQueryRef.current = onRunQuery;
+
     const handleEditorDidMount: OnMount = (editor, monaco) => {
         editorRef.current = editor;
 
@@ -37,8 +42,8 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({ initialValue = '-- Write y
 
         // Add command for Ctrl+Enter (or Cmd+Enter on Mac)
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-            if (onRunQuery) {
-                onRunQuery();
+            if (onRunQueryRef.current) {
+                onRunQueryRef.current();
             }
         });
     };
