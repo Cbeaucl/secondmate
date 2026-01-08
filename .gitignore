@@ -34,7 +34,8 @@ env/
 .coverage
 htmlcov/
 .mypy_cache/
-
+*.egg-info
+static
 # Spark / Iceberg
 warehouse/
 spark-warehouse/
