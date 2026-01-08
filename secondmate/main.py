@@ -202,7 +202,7 @@ def search_catalog(q: str, spark: SparkSession = Depends(get_spark_session)):
 app.include_router(router, prefix="/api")
 
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 import os
 
 # Mount static files
@@ -220,9 +220,40 @@ if os.path.exists(static_dir):
              from fastapi import HTTPException
              raise HTTPException(status_code=404, detail="Not Found")
         
+        # Check if it's a static file that exists
+        file_path = os.path.join(static_dir, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        # Fallback to index.html for SPA routing
         index_path = os.path.join(static_dir, "index.html")
         if os.path.exists(index_path):
-            return FileResponse(index_path)
+            with open(index_path, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Determine base path for API
+            # Priority: PROXY_PREFIX env var -> JUPYTERHUB_SERVICE_PREFIX -> default
+            # Note: JUPYTERHUB_SERVICE_PREFIX is usually /user/<name>/
+            # If running via jupyter-server-proxy, the URL is typically /user/<name>/proxy/<port>/
+            # The user should ideally set PROXY_PREFIX to the full proxy path.
+            proxy_prefix = os.getenv("PROXY_PREFIX", "")
+            if not proxy_prefix and os.getenv("JUPYTERHUB_SERVICE_PREFIX"):
+                 # Fallback/heuristic: if in jupyterhub, might still need port if using proxy
+                 pass 
+
+            # Ensure prefix has trailing slash if it exists and we're appending 'api'
+            # But wait, if prefix is "/foo", we want "/foo/api"
+            # If prefix is "/foo/", we want "/foo/api"
+            api_base = "/api"
+            if proxy_prefix:
+                clean_prefix = proxy_prefix.rstrip("/")
+                api_base = f"{clean_prefix}/api"
+
+            injection = f'<script>window.SECONDMATE_CONFIG = {{ apiBaseUrl: "{api_base}" }};</script>'
+            # Inject before </head>
+            content = content.replace("</head>", f"{injection}</head>")
+            
+            return HTMLResponse(content=content)
         return {"error": "Frontend not built or static files missing."}
 else:
     print(f"Warning: Static directory {static_dir} not found. Frontend will not be served.")

@@ -16,7 +16,16 @@ export interface SystemInfo {
     python_version: string;
 }
 
-const API_BASE_URL = '/api'; // Proxied by Vite
+declare global {
+    interface Window {
+        SECONDMATE_CONFIG?: {
+            apiBaseUrl?: string;
+        };
+    }
+}
+
+const API_BASE_URL = window.SECONDMATE_CONFIG?.apiBaseUrl || '/api'; // Proxied by Vite or injected
+
 
 export const api = {
     executeQuery: async (query: string): Promise<QueryResult> => {
