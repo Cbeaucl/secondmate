@@ -27,12 +27,13 @@ echo "Starting SecondMate Development Environment..."
 # Start Backend
 echo "Starting Backend (FastAPI)..."
 (
-    cd backend
     # Activate virtual environment if it exists
-    if [ -d "venv" ]; then
+    if [ -d ".venv" ]; then
+        source .venv/bin/activate
+    elif [ -d "venv" ]; then
         source venv/bin/activate
     fi
-    uvicorn app.main:app --reload --host 0.0.0.0
+    uvicorn secondmate.main:app --reload --host 0.0.0.0
 ) &
 BACKEND_PID=$!
 
