@@ -17,7 +17,7 @@ SecondMate is a modern data catalog and exploration tool built with a high-perfo
 *   **Build Tool**: Vite
 *   **State Management**: Zustand
 *   **Component**: Monaco Editor, React Resizable Panels
-*   **Styling**: Lucide React (Icons), CSS Modules/Tailwind (implied)
+*   **Styling**: Lucide React (Icons), CSS Modules
 
 ### Backend
 *   **Framework**: FastAPI
@@ -29,48 +29,64 @@ SecondMate is a modern data catalog and exploration tool built with a high-perfo
 
 ### Prerequisites
 *   Node.js (v18+ recommended)
-*   Python 3.10+
-*   Java (for PySpark)
+*   Python 3.11+
+*   Java 17+ (for PySpark)
+*   [uv](https://github.com/astral-sh/uv) (recommended for Python dependency management)
 
-### 1. Backend Setup
+### 1. Development Environment
 
-The backend handles the connection to the Spark/Iceberg cluster and provides APIs for catalog metadata and data querying.
-
-```bash
-# Navigate to the backend directory
-cd backend
-
-# Create a virtual environment (optional but recommended)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-**Running the Backend Server:**
+SecondMate includes a unified development script that starts both the FastAPI backend and Vite frontend together.
 
 ```bash
-# From the backend directory
-uvicorn app.main:app --reload
-```
-The API will be available at `http://localhost:8000`. You can view the automatic API docs at `http://localhost:8000/docs`.
+# Clone the repository and enter the directory
+git clone <repository-url>
+cd secondmate
 
-### 2. Frontend Setup
-
-The frontend connects to the backend to display the user interface.
-
-```bash
-# Navigate to the project root (if not already there)
-cd ..
-
-# Install dependencies
+# Install frontend dependencies
 npm install
 
-# Start the development server
+# Create a virtual environment and install backend dependencies using uv
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -e .
+
+# Start the development server (runs both backend and frontend)
+./dev.sh
+```
+
+- The UI will be available at `http://localhost:5173`.
+- The API will be available at `http://localhost:8000`.
+- Automatic API docs at `http://localhost:8000/docs`.
+
+### 2. Manual/Separate Setup
+
+**Frontend (Vite Server):**
+```bash
+npm install
 npm run dev
 ```
-The application will be available at `http://localhost:5173`.
+
+**Backend (FastAPI Server):**
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -e .
+uvicorn secondmate.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 3. Production Build
+
+When building for production, the Vite frontend compiles into the Python package (`secondmate/static`), which is then served by FastAPI.
+
+```bash
+# Build the frontend (outputs to secondmate/static)
+npm run build
+
+# Install the Python package and run the CLI
+uv pip install -e .
+secondmate --port 4050
+```
+*The app will be available at `http://localhost:4050` serving both UI and API.*
 
 ## 📚 API Endpoints
 
