@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 # Mock the environment
 os.environ["PROXY_PREFIX"] = "/user/test/proxy/4050"
-os.environ["SECONDMATE_STATIC_DIR"] = "/workspaces/secondmate/secondmate/static"
+os.environ["SECONDMATE_STATIC_DIR"] = os.path.join(os.getcwd(), "secondmate/static")
 
 # Import the app after setting env
 try:
@@ -13,7 +13,7 @@ try:
     client = TestClient(app)
     
     # We need to make sure index.html exists. It should be there after build.
-    if not os.path.exists("/workspaces/secondmate/secondmate/static/index.html"):
+    if not os.path.exists(os.path.join(os.getcwd(), "secondmate/static/index.html")):
         print("Build not finished or index.html missing.")
         exit(1)
         
