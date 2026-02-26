@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { SqlEditor } from '../Editor/SqlEditor';
 import { DataGrid } from '../Results/DataGrid';
+import { JsonView } from '../Results/JsonView';
 import { SteamboatLoader } from '../SteamboatLoader';
-import { Play } from 'lucide-react';
+import { Play, Table, FileJson } from 'lucide-react';
 import styles from './Workspace.module.css';
 import { api, type QueryResult } from '../../services/api';
 
@@ -13,6 +14,7 @@ export const Workspace: React.FC = () => {
     const [result, setResult] = useState<QueryResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [hasRun, setHasRun] = useState(false);
+    const [viewMode, setViewMode] = useState<'table' | 'json'>('table');
 
     const handleRunQuery = async () => {
         if (!query.trim()) return;
@@ -56,7 +58,29 @@ export const Workspace: React.FC = () => {
                     <Panel defaultSize={50} minSize={20}>
                         <div className={styles.resultsArea}>
                             <div className={styles.resultsHeader}>
-                                <span>Query Results</span>
+                                <div className={styles.headerLeft}>
+                                    <span>Query Results</span>
+                                    {result?.data && (
+                                        <div className={styles.viewToggle}>
+                                            <button
+                                                className={`${styles.toggleButton} ${viewMode === 'table' ? styles.toggleButtonActive : ''}`}
+                                                onClick={() => setViewMode('table')}
+                                                title="Table View"
+                                            >
+                                                <Table size={12} />
+                                                <span>Table</span>
+                                            </button>
+                                            <button
+                                                className={`${styles.toggleButton} ${viewMode === 'json' ? styles.toggleButtonActive : ''}`}
+                                                onClick={() => setViewMode('json')}
+                                                title="JSON View"
+                                            >
+                                                <FileJson size={12} />
+                                                <span>JSON</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                                 {result?.data && (
                                     <span className={styles.meta}>
                                         {result.data.length} rows retrieved
@@ -87,7 +111,11 @@ export const Workspace: React.FC = () => {
                             )}
 
                             {hasRun && !loading && result?.data && result.schema && (
-                                <DataGrid columns={result.schema} data={result.data} />
+                                viewMode === 'table' ? (
+                                    <DataGrid columns={result.schema} data={result.data} />
+                                ) : (
+                                    <JsonView data={result.data} />
+                                )
                             )}
                         </div>
                     </Panel>

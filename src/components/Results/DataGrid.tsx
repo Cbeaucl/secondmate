@@ -8,7 +8,7 @@ interface Column {
 
 interface DataGridProps {
     columns: Column[];
-    data: any[];
+    data: Record<string, unknown>[];
 }
 
 export const DataGrid: React.FC<DataGridProps> = ({ columns, data }) => {
@@ -32,7 +32,9 @@ export const DataGrid: React.FC<DataGridProps> = ({ columns, data }) => {
                         <tr key={i}>
                             {columns.map((col) => (
                                 <td key={`${i}-${col.name}`}>
-                                    {row[col.name]}
+                                    {typeof row[col.name] === 'object' && row[col.name] !== null
+                                        ? JSON.stringify(row[col.name])
+                                        : String(row[col.name] ?? '')}
                                 </td>
                             ))}
                         </tr>
