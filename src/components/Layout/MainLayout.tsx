@@ -17,7 +17,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       try {
         const info = await api.getSystemInfo();
         setSystemInfo(info);
-      } catch (err) {
+      } catch (_err) {
         setError('Disconnected');
       }
     };
