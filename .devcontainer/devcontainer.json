@@ -4,8 +4,11 @@
     "features": {
         "ghcr.io/devcontainers/features/git:1": {},
         "ghcr.io/devcontainers/features/node:1": {},
-        "ghcr.io/devcontainers/features/jdk:1": {
-            "version": "21"
+        "ghcr.io/devcontainers/features/java:1": {
+            "version": "17",
+            "installMaven": "true",
+            "installGradle": "false",
+            "jdkDistro": "ms"
         }
     },
     "containerUser": "vscode",
