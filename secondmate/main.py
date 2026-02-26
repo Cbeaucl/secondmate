@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, APIRouter
+from fastapi import FastAPI, Depends, APIRouter, HTTPException
 from pyspark.sql import SparkSession
 from secondmate.dependencies import get_spark_session
 import sys
@@ -12,6 +12,12 @@ from secondmate.dependencies import get_spark_provider
 import random
 
 from secondmate.providers.local_spark import LocalSparkProvider
+import re
+
+def validate_identifier(name: str):
+    """Validate that an identifier only contains alphanumeric characters, underscores, and dots."""
+    if not re.match(r"^[a-zA-Z0-9_.]+$", name):
+        raise HTTPException(status_code=400, detail=f"Invalid identifier: {name}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -120,6 +126,7 @@ def get_catalogs(spark: SparkSession = Depends(get_spark_session)):
 @router.get("/catalogs/{catalog_name}/namespaces")
 def get_namespaces(catalog_name: str, spark: SparkSession = Depends(get_spark_session)):
     """List namespaces in a specific catalog."""
+    validate_identifier(catalog_name)
     try:
         # Switch to catalog to list namespaces easily, or use `SHOW NAMESPACES IN catalog`
         df = spark.sql(f"SHOW NAMESPACES IN {catalog_name}")
@@ -132,6 +139,8 @@ def get_namespaces(catalog_name: str, spark: SparkSession = Depends(get_spark_se
 @router.get("/catalogs/{catalog_name}/namespaces/{namespace}/tables")
 def get_tables(catalog_name: str, namespace: str, spark: SparkSession = Depends(get_spark_session)):
     """List tables in a specific namespace."""
+    validate_identifier(catalog_name)
+    validate_identifier(namespace)
     try:
         df = spark.sql(f"SHOW TABLES IN {catalog_name}.{namespace}")
         # Columns: 'namespace', 'tableName', 'isTemporary'
