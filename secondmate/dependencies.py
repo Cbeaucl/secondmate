@@ -2,7 +2,7 @@ import os
 import importlib
 from functools import lru_cache
 from pyspark.sql import SparkSession
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from secondmate.providers.spark_interface import SparkProvider
 from secondmate.providers.local_spark import LocalSparkProvider
 

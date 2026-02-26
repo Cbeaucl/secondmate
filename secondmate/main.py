@@ -2,6 +2,10 @@ from fastapi import FastAPI, Depends, APIRouter
 from pyspark.sql import SparkSession
 from secondmate.dependencies import get_spark_session
 import sys
+import os
+from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, HTMLResponse
 
 # Hack to make sure pyspark finds the right python executable if needed, 
 # or relying on environment. 
@@ -9,7 +13,6 @@ import sys
 
 from contextlib import asynccontextmanager
 from secondmate.dependencies import get_spark_provider
-import random
 
 from secondmate.providers.local_spark import LocalSparkProvider
 
@@ -77,8 +80,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SecondMate Backend", lifespan=lifespan)
 router = APIRouter()
-
-from pydantic import BaseModel
 
 class QueryRequest(BaseModel):
     query: str
@@ -205,10 +206,6 @@ def search_catalog(q: str, spark: SparkSession = Depends(get_spark_session)):
 
 # Include the API router
 app.include_router(router, prefix="/api")
-
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse
-import os
 
 # Mount static files
 # Use environment variable or fallback to local assumption

@@ -1,5 +1,4 @@
 import asyncio
-import sys
 from unittest.mock import MagicMock, patch
 from secondmate.providers.spark_interface import SparkProvider
 from secondmate.providers.local_spark import LocalSparkProvider
