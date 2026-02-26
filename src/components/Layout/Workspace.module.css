@@ -84,6 +84,43 @@
     color: var(--text-muted);
 }
 
+.viewToggle {
+    display: flex;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    padding: 2px;
+    margin-left: 12px;
+}
+
+.toggleButton {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toggleButton:hover {
+    color: var(--text-primary);
+}
+
+.toggleButtonActive {
+    background-color: var(--bg-secondary);
+    color: var(--accent-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+}
+
 .emptyState {
     display: flex;
     flex-direction: column;
