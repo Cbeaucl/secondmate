@@ -1,6 +1,7 @@
 import React from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { Sidebar } from './Sidebar';
+import { TableOverview } from './TableOverview';
 import { api, type SystemInfo } from '../../services/api';
 import styles from './MainLayout.module.css';
 
@@ -11,6 +12,7 @@ interface MainLayoutProps {
 export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [systemInfo, setSystemInfo] = React.useState<SystemInfo | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [overviewTable, setOverviewTable] = React.useState<{ catalog: string, namespace: string, table: string } | null>(null);
 
   React.useEffect(() => {
     const fetchInfo = async () => {
@@ -33,13 +35,23 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     <div className={styles.container}>
       <PanelGroup direction="horizontal">
         <Panel defaultSize={20} minSize={15} maxSize={40} className={styles.sidebarPanel}>
-          <Sidebar />
+          <Sidebar onTableOverview={(catalog, namespace, table) => setOverviewTable({ catalog, namespace, table })} />
         </Panel>
         <PanelResizeHandle className={styles.resizeHandle} />
         <Panel className={styles.contentPanel}>
           {children}
         </Panel>
       </PanelGroup>
+
+      {overviewTable && (
+        <TableOverview
+          catalog={overviewTable.catalog}
+          namespace={overviewTable.namespace}
+          table={overviewTable.table}
+          onClose={() => setOverviewTable(null)}
+        />
+      )}
+
       <div className={styles.statusBar}>
         <span>Ready</span>
         {error ? (
