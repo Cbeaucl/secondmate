@@ -3,6 +3,7 @@ from pyspark.sql import SparkSession
 from secondmate.dependencies import get_spark_session
 import sys
 import os
+import logging
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
@@ -21,6 +22,8 @@ def validate_identifier(name: str):
     """Validate that an identifier only contains alphanumeric characters, underscores, and dots."""
     if not re.match(r"^[a-zA-Z0-9_.]+\Z", name):
         raise HTTPException(status_code=400, detail=f"Invalid identifier: {name}")
+
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -105,10 +108,9 @@ def execute_query(request: QueryRequest, spark: SparkSession = Depends(get_spark
         data = [row.asDict() for row in df.collect()]
         
         return {"schema": schema, "data": data}
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return {"error": str(e)}
+    except Exception:
+        logger.error("Error executing query", exc_info=True)
+        return {"error": "An error occurred while executing the query."}
 
 @router.get("/catalogs")
 def get_catalogs(spark: SparkSession = Depends(get_spark_session)):
@@ -121,8 +123,9 @@ def get_catalogs(spark: SparkSession = Depends(get_spark_session)):
         df = spark.sql("SHOW CATALOGS")
         catalogs = [row.catalog for row in df.collect()]
         return {"catalogs": catalogs}
-    except Exception as e:
-        return {"catalogs": [], "error": str(e)}
+    except Exception:
+        logger.error("Error retrieving catalogs", exc_info=True)
+        return {"catalogs": [], "error": "Unable to retrieve catalogs."}
 
 @router.get("/catalogs/{catalog_name}/namespaces")
 def get_namespaces(catalog_name: str, spark: SparkSession = Depends(get_spark_session)):
@@ -134,8 +137,9 @@ def get_namespaces(catalog_name: str, spark: SparkSession = Depends(get_spark_se
         # The column name is usually 'namespace'
         namespaces = [row.namespace for row in df.collect()]
         return {"namespaces": namespaces}
-    except Exception as e:
-        return {"namespaces": [], "error": str(e)}
+    except Exception:
+        logger.error(f"Error retrieving namespaces for catalog {catalog_name}", exc_info=True)
+        return {"namespaces": [], "error": "Unable to retrieve namespaces."}
 
 @router.get("/catalogs/{catalog_name}/namespaces/{namespace}/tables")
 def get_tables(catalog_name: str, namespace: str, spark: SparkSession = Depends(get_spark_session)):
@@ -147,8 +151,9 @@ def get_tables(catalog_name: str, namespace: str, spark: SparkSession = Depends(
         # Columns: 'namespace', 'tableName', 'isTemporary'
         tables = [row.tableName for row in df.collect()]
         return {"tables": tables}
-    except Exception as e:
-        return {"tables": [], "error": str(e)}
+    except Exception:
+        logger.error(f"Error retrieving tables for {catalog_name}.{namespace}", exc_info=True)
+        return {"tables": [], "error": "Unable to retrieve tables."}
 
 @router.get("/info")
 def get_info(spark: SparkSession = Depends(get_spark_session)):
@@ -208,8 +213,9 @@ def search_catalog(q: str, spark: SparkSession = Depends(get_spark_session)):
             except Exception:
                 continue
 
-    except Exception as e:
-        return {"results": [], "error": str(e)}
+    except Exception:
+        logger.error("Error during catalog search", exc_info=True)
+        return {"results": [], "error": "An error occurred during search."}
 
     return {"results": results}
 
