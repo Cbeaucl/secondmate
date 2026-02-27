@@ -23,3 +23,9 @@ source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 packages = ["secondmate"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"secondmate/static" = "secondmate/static"
+
+[tool.hatch.build.targets.sdist.force-include]
+"secondmate/static" = "secondmate/static"
