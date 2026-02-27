@@ -105,7 +105,7 @@ def execute_query(request: QueryRequest, spark: SparkSession = Depends(get_spark
         schema = [{"name": field.name, "type": str(field.dataType)} for field in df.schema.fields]
         
         # Get data
-        data = [row.asDict() for row in df.collect()]
+        data = [row.asDict(recursive=True) for row in df.collect()]
         
         return {"schema": schema, "data": data}
     except Exception:
@@ -176,7 +176,7 @@ def get_table_overview(catalog_name: str, namespace: str, table_name: str, spark
                     m_df = spark.sql(query)
                 else:
                     m_df = spark.sql(f"SELECT * FROM {full_table_name}.{suffix}")
-                return [row.asDict() for row in m_df.collect()]
+                return [row.asDict(recursive=True) for row in m_df.collect()]
             except Exception as e:
                 logger.warning(f"Metadata table {suffix} not available for {full_table_name}: {e}")
                 return []
