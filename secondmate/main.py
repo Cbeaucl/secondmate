@@ -19,7 +19,7 @@ import re
 
 def validate_identifier(name: str):
     """Validate that an identifier only contains alphanumeric characters, underscores, and dots."""
-    if not re.match(r"^[a-zA-Z0-9_.]+$", name):
+    if not re.match(r"^[a-zA-Z0-9_.]+\Z", name):
         raise HTTPException(status_code=400, detail=f"Invalid identifier: {name}")
 
 @asynccontextmanager
