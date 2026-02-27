@@ -103,6 +103,54 @@
     color: var(--text-primary);
 }
 
+.treeRow:hover .moreButton {
+    opacity: 1;
+}
+
+.moreButton {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 4px;
+    opacity: 0;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.moreButton:hover {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.menu {
+    position: fixed;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 0;
+    z-index: 1000;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    min-width: 140px;
+}
+
+.menuItem {
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+}
+
+.menuItem:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
 .treeChildren {
     padding-left: 16px;
 }

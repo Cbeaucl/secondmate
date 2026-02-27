@@ -72,6 +72,12 @@ export const api = {
         const response = await fetch(`${API_BASE_URL}/info`);
         if (!response.ok) throw new Error('Failed to fetch system info');
         return await response.json();
+    },
+
+    getTableOverview: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/overview`);
+        if (!response.ok) throw new Error('Failed to fetch table overview');
+        return await response.json();
     }
 };
 

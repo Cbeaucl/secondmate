@@ -155,6 +155,76 @@ def get_tables(catalog_name: str, namespace: str, spark: SparkSession = Depends(
         logger.error(f"Error retrieving tables for {catalog_name}.{namespace}", exc_info=True)
         return {"tables": [], "error": "Unable to retrieve tables."}
 
+@router.get("/catalogs/{catalog_name}/namespaces/{namespace}/tables/{table_name}/overview")
+def get_table_overview(catalog_name: str, namespace: str, table_name: str, spark: SparkSession = Depends(get_spark_session)):
+    """Get an overview of an Iceberg table including schema, properties, snapshots, partitions, and files."""
+    validate_identifier(catalog_name)
+    validate_identifier(namespace)
+    validate_identifier(table_name)
+
+    full_table_name = f"{catalog_name}.{namespace}.{table_name}"
+
+    try:
+        # 1. Schema
+        df = spark.table(full_table_name)
+        schema_json = df.schema.jsonValue()
+
+        # Helper to get data from metadata tables or return empty list if not supported
+        def get_metadata(suffix, query=None):
+            try:
+                if query:
+                    m_df = spark.sql(query)
+                else:
+                    m_df = spark.sql(f"SELECT * FROM {full_table_name}.{suffix}")
+                return [row.asDict() for row in m_df.collect()]
+            except Exception as e:
+                logger.warning(f"Metadata table {suffix} not available for {full_table_name}: {e}")
+                return []
+
+        # 2. Properties
+        properties = get_metadata("properties")
+
+        # 3. Snapshots (ordered by latest, limit 250)
+        snapshots = get_metadata("snapshots", f"SELECT * FROM {full_table_name}.snapshots ORDER BY committed_at DESC LIMIT 250")
+
+        # 4. Partitions (limit 250)
+        partitions = get_metadata("partitions", f"SELECT * FROM {full_table_name}.partitions LIMIT 250")
+
+        # 5. Files (exclude file_path, convert size to MB, limit 250)
+        files = get_metadata("files", f"""
+            SELECT
+                content,
+                file_format,
+                spec_id,
+                partition,
+                record_count,
+                file_size_in_bytes / (1024.0 * 1024.0) as file_size_mb,
+                column_sizes,
+                value_counts,
+                null_value_counts,
+                nan_value_counts,
+                lower_bounds,
+                upper_bounds,
+                key_metadata,
+                split_offsets,
+                equality_ids,
+                sort_order_id
+            FROM {full_table_name}.files
+            LIMIT 250
+        """)
+
+        return {
+            "tableName": full_table_name,
+            "schema": schema_json,
+            "properties": properties,
+            "snapshots": snapshots,
+            "partitions": partitions,
+            "files": files
+        }
+    except Exception:
+        logger.error(f"Error retrieving overview for {full_table_name}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Unable to retrieve overview for table {full_table_name}")
+
 @router.get("/info")
 def get_info(spark: SparkSession = Depends(get_spark_session)):
     return {
