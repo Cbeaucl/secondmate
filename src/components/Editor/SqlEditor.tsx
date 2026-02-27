@@ -1,20 +1,22 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
+import type { editor } from 'monaco-editor';
 import styles from './SqlEditor.module.css';
 
 interface SqlEditorProps {
-    initialValue?: string;
+    value?: string;
     onChange?: (value: string | undefined) => void;
     onRunQuery?: () => void;
 }
 
-export const SqlEditor: React.FC<SqlEditorProps> = ({ initialValue = '-- Write your SparkSQL here\nSELECT * FROM spark_catalog.default.sales LIMIT 100;', onChange, onRunQuery }) => {
-    const editorRef = useRef<any>(null);
+export const SqlEditor: React.FC<SqlEditorProps> = ({ value = '', onChange, onRunQuery }) => {
+    const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
     const onRunQueryRef = useRef(onRunQuery);
 
-    // Keep the ref updated with the latest callback
-    onRunQueryRef.current = onRunQuery;
+    useEffect(() => {
+        onRunQueryRef.current = onRunQuery;
+    }, [onRunQuery]);
 
     const handleEditorDidMount: OnMount = (editor, monaco) => {
         editorRef.current = editor;
@@ -53,7 +55,7 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({ initialValue = '-- Write y
             <Editor
                 height="100%"
                 defaultLanguage="sql"
-                defaultValue={initialValue}
+                value={value}
                 onMount={handleEditorDidMount}
                 onChange={onChange}
                 options={{
