@@ -43,3 +43,6 @@ metastore_db/
 derby.log
 *.parquet
 *.avro
+
+# Frontend Build Artifacts
+secondmate/static/
