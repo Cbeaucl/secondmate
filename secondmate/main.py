@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 from secondmate.dependencies import get_spark_provider
 
 from secondmate.providers.local_spark import LocalSparkProvider
+from secondmate.dev_data import initialize_dev_data
 import re
 
 def validate_identifier(name: str):
@@ -33,56 +34,7 @@ async def lifespan(app: FastAPI):
     
     # Only create fake data if using LocalSparkProvider
     if isinstance(provider, LocalSparkProvider):
-        # helper to create table with data
-        def create_table_if_not_exists(table_name, schema_ddl, data_records, schema_cols):
-            if not spark.catalog.tableExists(table_name):
-                print(f"Creating {table_name} table...")
-                spark.sql(f"CREATE TABLE IF NOT EXISTS {table_name} ({schema_ddl}) USING iceberg")
-            
-            # Check if empty
-            count = spark.table(table_name).count()
-            if count == 0 and data_records:
-                print(f"Populating {table_name} with {len(data_records)} rows...")
-                df = spark.createDataFrame(data_records, schema_cols)
-                df.writeTo(table_name).append()
-                print(f"Initialized {table_name} with {len(data_records)} rows.")
-            else:
-                 print(f"Table {table_name} already has {count} rows.")
-    
-        # 1. user.ipgeo
-        create_table_if_not_exists(
-            "user.ipgeo", 
-            "id LONG, ip STRING, city STRING, country STRING", 
-            [(i, f"192.168.1.{i % 255}", f"City_{i}", f"Country_{i % 10}") for i in range(1000)],
-            ["id", "ip", "city", "country"]
-        )
-    
-        # 2. user.sales.transactions
-        from datetime import date
-        spark.sql("CREATE NAMESPACE IF NOT EXISTS user.sales")
-        create_table_if_not_exists(
-            "user.sales.transactions",
-            "tx_id LONG, amount DOUBLE, currency STRING, tx_date DATE",
-            [
-                (1, 100.50, "USD", date(2023, 1, 1)),
-                (2, 200.00, "EUR", date(2023, 1, 2)),
-                (3, 50.25, "GBP", date(2023, 1, 3))
-            ],
-            ["tx_id", "amount", "currency", "tx_date"]
-        )
-    
-        # 3. user.finance.budget
-        spark.sql("CREATE NAMESPACE IF NOT EXISTS user.finance")
-        create_table_if_not_exists(
-            "user.finance.budget",
-            "dept_id LONG, dept_name STRING, budget_amount DOUBLE, fiscal_year INT",
-            [
-                (101, "Engineering", 500000.0, 2024),
-                (102, "Marketing", 200000.0, 2024),
-                (103, "HR", 150000.0, 2024)
-            ],
-            ["dept_id", "dept_name", "budget_amount", "fiscal_year"]
-        )
+        initialize_dev_data(spark)
 
     yield
     # Shutdown logic if needed
