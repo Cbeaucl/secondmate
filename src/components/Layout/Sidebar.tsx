@@ -3,6 +3,55 @@ import { Database, Table, Folder, ChevronRight, ChevronDown, Search, Loader2, X,
 import styles from './Sidebar.module.css';
 import { api } from '../../services/api';
 
+interface TableMenuProps {
+    catalog: string;
+    namespace: string;
+    table: string;
+    onTableOverview: (catalog: string, namespace: string, table: string) => void;
+}
+
+const TableMenu: React.FC<TableMenuProps> = ({ catalog, namespace, table, onTableOverview }) => {
+    const [menuOpen, setMenuOpen] = useState<{ x: number, y: number } | null>(null);
+
+    const handleMoreClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setMenuOpen({ x: e.clientX, y: e.clientY });
+    };
+
+    useEffect(() => {
+        if (!menuOpen) return;
+        const closeMenu = () => setMenuOpen(null);
+        window.addEventListener('click', closeMenu);
+        return () => window.removeEventListener('click', closeMenu);
+    }, [menuOpen]);
+
+    return (
+        <>
+            <button className={styles.moreButton} onClick={handleMoreClick} title="Table Menu">
+                <MoreVertical size={14} />
+            </button>
+            {menuOpen && (
+                <div
+                    className={styles.menu}
+                    style={{ top: menuOpen.y, left: menuOpen.x }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div
+                        className={styles.menuItem}
+                        onClick={() => {
+                            onTableOverview(catalog, namespace, table);
+                            setMenuOpen(null);
+                        }}
+                    >
+                        <FileText size={14} />
+                        <span>Table Overview</span>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
+
 interface TreeNodeProps {
     label: string;
     type: 'catalog' | 'namespace' | 'table';
@@ -31,19 +80,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
     const Icon = type === 'catalog' ? Database : type === 'namespace' ? Folder : Table;
     const color = type === 'catalog' ? '#38bdf8' : type === 'namespace' ? '#fbbf24' : '#a78bfa';
     const showChildren = forceExpand || isExpanded;
-    const [menuOpen, setMenuOpen] = useState<{ x: number, y: number } | null>(null);
-
-    const handleMoreClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setMenuOpen({ x: e.clientX, y: e.clientY });
-    };
-
-    useEffect(() => {
-        if (!menuOpen) return;
-        const closeMenu = () => setMenuOpen(null);
-        window.addEventListener('click', closeMenu);
-        return () => window.removeEventListener('click', closeMenu);
-    }, [menuOpen]);
 
     return (
         <div className={styles.treeItem}>
@@ -58,29 +94,14 @@ const TreeNode: React.FC<TreeNodeProps> = ({
                 <Icon size={14} className={styles.icon} color={color} />
                 <span className="truncate">{label}</span>
                 {type === 'table' && onTableOverview && catalog && namespace && (
-                    <button className={styles.moreButton} onClick={handleMoreClick}>
-                        <MoreVertical size={14} />
-                    </button>
+                    <TableMenu
+                        catalog={catalog}
+                        namespace={namespace}
+                        table={label}
+                        onTableOverview={onTableOverview}
+                    />
                 )}
             </div>
-            {menuOpen && (
-                <div
-                    className={styles.menu}
-                    style={{ top: menuOpen.y, left: menuOpen.x }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div
-                        className={styles.menuItem}
-                        onClick={() => {
-                            onTableOverview?.(catalog!, namespace!, label);
-                            setMenuOpen(null);
-                        }}
-                    >
-                        <FileText size={14} />
-                        <span>Table Overview</span>
-                    </div>
-                </div>
-            )}
             {showChildren && children && <div className={styles.treeChildren}>{children}</div>}
         </div>
     );
@@ -276,16 +297,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview }) => {
                                 </span>
 
                                 {item.type === 'table' && onTableOverview && (
-                                    <button
-                                        className={styles.moreButton}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onTableOverview(item.catalog, item.namespace, item.table);
-                                        }}
-                                        title="Table Overview"
-                                    >
-                                        <MoreVertical size={14} />
-                                    </button>
+                                    <TableMenu
+                                        catalog={item.catalog}
+                                        namespace={item.namespace}
+                                        table={item.table}
+                                        onTableOverview={onTableOverview}
+                                    />
                                 )}
                             </div>
                         ))}
