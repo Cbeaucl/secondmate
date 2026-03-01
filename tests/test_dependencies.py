@@ -43,6 +43,14 @@ class TestSparkProvider(unittest.TestCase):
             mock_provider_class.assert_called_once()
             self.assertEqual(provider, mock_provider_instance)
 
+    def test_custom_provider_attribute_error(self):
+        """Test that ImportError is raised if the class cannot be found in the module."""
+        with patch.dict(os.environ, {"SPARK_PROVIDER_CLASS": "os.FakeProviderClass"}):
+            with self.assertRaises(ImportError) as cm:
+                get_spark_provider()
+
+            self.assertIn("Could not load Spark provider 'os.FakeProviderClass'", str(cm.exception))
+
     def test_custom_provider_import_error(self):
         """Test that ImportError is raised if the module cannot be imported."""
         with patch.dict(os.environ, {"SPARK_PROVIDER_CLASS": "invalid.module.Provider"}), \
