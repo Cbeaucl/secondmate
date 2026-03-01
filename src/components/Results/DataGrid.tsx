@@ -11,7 +11,7 @@ interface DataGridProps {
     data: Record<string, unknown>[];
 }
 
-export const DataGrid: React.FC<DataGridProps> = ({ columns, data }) => {
+export const DataGrid: React.FC<DataGridProps> = React.memo(({ columns, data }) => {
     return (
         <div className={styles.gridContainer}>
             <table className={styles.table}>
@@ -43,4 +43,4 @@ export const DataGrid: React.FC<DataGridProps> = ({ columns, data }) => {
             </table>
         </div>
     );
-};
+});
