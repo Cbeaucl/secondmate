@@ -18,6 +18,21 @@ from secondmate.dependencies import get_spark_provider
 from secondmate.providers.local_spark import LocalSparkProvider
 from secondmate.dev_data import initialize_dev_data
 import re
+import base64
+
+def sanitize_for_serialization(obj):
+    if isinstance(obj, dict):
+        return {str(k): sanitize_for_serialization(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_serialization(v) for v in obj]
+    elif isinstance(obj, tuple):
+        return tuple(sanitize_for_serialization(v) for v in obj)
+    elif isinstance(obj, (bytes, bytearray)):
+        try:
+            return obj.decode('utf-8')
+        except UnicodeDecodeError:
+            return base64.b64encode(obj).decode('utf-8')
+    return obj
 
 def validate_identifier(name: str):
     """Validate that an identifier only contains alphanumeric characters, underscores, and dots."""
@@ -58,6 +73,7 @@ def execute_query(request: QueryRequest, spark: SparkSession = Depends(get_spark
         
         # Get data
         data = [row.asDict(recursive=True) for row in df.collect()]
+        data = sanitize_for_serialization(data)
         
         return {"schema": schema, "data": data}
     except Exception:
@@ -128,7 +144,8 @@ def get_table_overview(catalog_name: str, namespace: str, table_name: str, spark
                     m_df = spark.sql(query)
                 else:
                     m_df = spark.sql(f"SELECT * FROM {full_table_name}.{suffix}")
-                return [row.asDict(recursive=True) for row in m_df.collect()]
+                rows = [row.asDict(recursive=True) for row in m_df.collect()]
+                return sanitize_for_serialization(rows)
             except Exception as e:
                 logger.warning(f"Metadata table {suffix} not available for {full_table_name}: {e}")
                 return []
