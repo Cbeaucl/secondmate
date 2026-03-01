@@ -151,7 +151,7 @@ def get_table_overview(catalog_name: str, namespace: str, table_name: str, spark
                 return []
 
         # 2. Properties
-        properties = get_metadata("properties")
+        properties = get_metadata("properties", f"SHOW TBLPROPERTIES {full_table_name}")
 
         # 3. Snapshots (ordered by latest, limit 250)
         snapshots = get_metadata("snapshots", f"SELECT * FROM {full_table_name}.snapshots ORDER BY committed_at DESC LIMIT 250")
