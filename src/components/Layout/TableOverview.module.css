@@ -103,6 +103,13 @@
     overflow: hidden;
 }
 
+.gridWrapper {
+    height: 300px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: auto;
+}
+
 .emptyText {
     color: var(--text-muted);
     font-style: italic;

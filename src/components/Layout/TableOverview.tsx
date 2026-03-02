@@ -107,7 +107,9 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
                     <section className={styles.section}>
                         <h2>Table Properties</h2>
                         {properties.length > 0 ? (
-                            <DataGrid columns={getColumns(properties)} data={properties} />
+                            <div className={styles.gridWrapper}>
+                                <DataGrid columns={getColumns(properties)} data={properties} />
+                            </div>
                         ) : (
                             <p className={styles.emptyText}>No properties found.</p>
                         )}
@@ -116,7 +118,9 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
                     <section className={styles.section}>
                         <h2>Iceberg Snapshots</h2>
                         {snapshots.length > 0 ? (
-                            <DataGrid columns={getColumns(snapshots)} data={snapshots} />
+                            <div className={styles.gridWrapper}>
+                                <DataGrid columns={getColumns(snapshots)} data={snapshots} />
+                            </div>
                         ) : (
                             <p className={styles.emptyText}>No snapshots found.</p>
                         )}
@@ -125,7 +129,9 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
                     <section className={styles.section}>
                         <h2>Iceberg Partitions</h2>
                         {flattenedPartitions.length > 0 ? (
-                            <DataGrid columns={getColumns(flattenedPartitions)} data={flattenedPartitions} />
+                            <div className={styles.gridWrapper}>
+                                <DataGrid columns={getColumns(flattenedPartitions)} data={flattenedPartitions} />
+                            </div>
                         ) : (
                             <p className={styles.emptyText}>No partitions found.</p>
                         )}
@@ -134,7 +140,9 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
                     <section className={styles.section}>
                         <h2>Iceberg Files</h2>
                         {files.length > 0 ? (
-                            <DataGrid columns={getColumns(files)} data={files} />
+                            <div className={styles.gridWrapper}>
+                                <DataGrid columns={getColumns(files)} data={files} />
+                            </div>
                         ) : (
                             <p className={styles.emptyText}>No files found.</p>
                         )}
