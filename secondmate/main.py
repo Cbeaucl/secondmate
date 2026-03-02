@@ -17,6 +17,8 @@ from secondmate.dependencies import get_spark_provider
 
 from secondmate.providers.local_spark import LocalSparkProvider
 from secondmate.dev_data import initialize_dev_data
+from secondmate.models import ConfigOption
+from typing import Dict, Any, List
 import re
 import base64
 
@@ -61,9 +63,16 @@ class QueryRequest(BaseModel):
     query: str
 
 @router.post("/query/execute")
-def execute_query(request: QueryRequest, spark: SparkSession = Depends(get_spark_session)):
+def execute_query(request: QueryRequest, provider = Depends(get_spark_provider)):
     """Execute a raw SQL query and return results."""
+    # Validate required configs
+    configs = provider.get_configs()
+    for config in configs:
+        if config.is_required and (config.current_value is None or config.current_value == ""):
+            raise HTTPException(status_code=400, detail=f"Required configuration '{config.label}' is missing.")
+
     try:
+        spark = provider.get_session()
         df = spark.sql(request.query)
         # Limit to 1000 to prevent overloading
         df = df.limit(1000)
@@ -193,6 +202,21 @@ def get_table_overview(catalog_name: str, namespace: str, table_name: str, spark
     except Exception:
         logger.error(f"Error retrieving overview for {full_table_name}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Unable to retrieve overview for table {full_table_name}")
+
+@router.get("/configs", response_model=List[ConfigOption])
+def get_configs(provider=Depends(get_spark_provider)):
+    """Get the current configurations."""
+    return provider.get_configs()
+
+@router.post("/configs")
+def set_configs(configs: Dict[str, Any], provider=Depends(get_spark_provider)):
+    """Update the configurations."""
+    try:
+        provider.set_configs(configs)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error("Error updating configurations", exc_info=True)
+        raise HTTPException(status_code=422, detail=str(e))
 
 @router.get("/info")
 def get_info(spark: SparkSession = Depends(get_spark_session)):

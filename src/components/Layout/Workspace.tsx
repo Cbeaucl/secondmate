@@ -1,15 +1,16 @@
 // Workspace.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from 'react-resizable-panels';
 import { SqlEditor } from '../Editor/SqlEditor';
 import { DataGrid } from '../Results/DataGrid';
 import { JsonView } from '../Results/JsonView';
 import { SteamboatLoader } from '../SteamboatLoader';
-import { Play, Table, FileJson, History } from 'lucide-react';
+import { Play, Table, FileJson, History, Settings, AlertTriangle } from 'lucide-react';
 import styles from './Workspace.module.css';
-import { api, type QueryResult } from '../../services/api';
+import { api, type QueryResult, type ConfigOption } from '../../services/api';
 import { useQueryHistory } from '../../hooks/useQueryHistory';
 import { QueryHistory } from '../History/QueryHistory';
+import { ConfigModal } from '../Editor/ConfigModal';
 
 export const Workspace: React.FC = () => {
     const [query, setQuery] = useState('-- Write your SparkSQL here\nSELECT * FROM user.sales.transactions LIMIT 100;');
@@ -19,8 +20,28 @@ export const Workspace: React.FC = () => {
     const [viewMode, setViewMode] = useState<'table' | 'json'>('table');
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
+    const [configs, setConfigs] = useState<ConfigOption[]>([]);
+    const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+
     const historyPanelRef = useRef<ImperativePanelHandle>(null);
     const { history, addEntry, clearHistory } = useQueryHistory();
+
+    const fetchConfigs = async () => {
+        try {
+            const data = await api.getConfigs();
+            setConfigs(data);
+        } catch (err) {
+            console.error('Failed to fetch configs', err);
+        }
+    };
+
+    useEffect(() => {
+        fetchConfigs();
+    }, []);
+
+    const missingRequiredConfigs = configs.filter(c =>
+        c.is_required && (c.current_value === null || c.current_value === '')
+    );
 
     const handleRunQuery = async () => {
         if (!query.trim()) return;
@@ -56,13 +77,28 @@ export const Workspace: React.FC = () => {
         <div className={styles.workspace}>
             <div className={styles.toolbar}>
                 <button
-                    className={`${styles.runButton} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`${styles.runButton} ${missingRequiredConfigs.length > 0 ? styles.runButtonWarning : ''}`}
                     onClick={handleRunQuery}
-                    disabled={loading}
+                    disabled={loading || missingRequiredConfigs.length > 0}
+                    title={missingRequiredConfigs.length > 0 ? "Missing required configurations. Please update settings before running." : ""}
                 >
-                    <Play size={14} fill="currentColor" />
+                    {missingRequiredConfigs.length > 0 ? (
+                        <AlertTriangle size={14} className="text-yellow-500" />
+                    ) : (
+                        <Play size={14} fill="currentColor" />
+                    )}
                     <span>{loading ? 'Running...' : 'Run'}</span>
                 </button>
+
+                {configs.length > 0 && (
+                    <button
+                        className={styles.configButton}
+                        onClick={() => setIsConfigModalOpen(true)}
+                        title="Configure Spark Settings"
+                    >
+                        <Settings size={14} />
+                    </button>
+                )}
 
                 <button
                     className={`${styles.historyToggleButton} ${isHistoryOpen ? styles.historyToggleButtonActive : ''}`}
@@ -73,6 +109,13 @@ export const Workspace: React.FC = () => {
                     <span>History</span>
                 </button>
             </div>
+
+            <ConfigModal
+                isOpen={isConfigModalOpen}
+                onClose={() => setIsConfigModalOpen(false)}
+                configs={configs}
+                onSaved={fetchConfigs}
+            />
 
             <div className={styles.content}>
                 <PanelGroup direction="horizontal">
