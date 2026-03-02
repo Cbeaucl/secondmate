@@ -33,6 +33,36 @@
     background-color: #047857;
 }
 
+.runButton:disabled {
+    background-color: #334155;
+    color: #64748b;
+    cursor: not-allowed;
+}
+
+.runButtonWarning {
+    background-color: #334155;
+    color: #94a3b8;
+    border: 1px solid #eab308;
+}
+
+.configButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.configButton:hover {
+    background-color: var(--bg-secondary);
+    border-color: var(--accent-primary);
+}
+
 .historyToggleButton {
     display: flex;
     align-items: center;
