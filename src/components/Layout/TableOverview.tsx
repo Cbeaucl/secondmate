@@ -80,6 +80,34 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
         return p;
     });
 
+    // Calculate Metrics
+    const lastSnapshot = snapshots.length > 0 ? new Date(snapshots[0].committed_at).toLocaleString() : 'N/A';
+    const earliestSnapshot = snapshots.length > 0 ? new Date(snapshots[snapshots.length - 1].committed_at).toLocaleString() : 'N/A';
+
+    let rowCount = 'N/A';
+    if (snapshots.length > 0 && snapshots[0].summary && snapshots[0].summary['total-records']) {
+        rowCount = parseInt(snapshots[0].summary['total-records']).toLocaleString();
+    } else if (files.length > 0) {
+        const total = files.reduce((acc: number, f: any) => acc + (f.record_count || 0), 0);
+        rowCount = total.toLocaleString();
+    }
+
+    const columnCount = schema?.fields ? schema.fields.length.toString() : 'N/A';
+
+    let avgFileSize = 'N/A';
+    if (files.length > 0) {
+        const totalSize = files.reduce((acc: number, f: any) => acc + (f.file_size_mb || 0), 0);
+        avgFileSize = (totalSize / files.length).toFixed(2) + ' MB';
+    }
+
+    let partitionColumns = 'N/A';
+    if (partitions.length > 0 && partitions[0].partition && typeof partitions[0].partition === 'object') {
+        const keys = Object.keys(partitions[0].partition);
+        if (keys.length > 0) {
+            partitionColumns = keys.join(', ');
+        }
+    }
+
     return (
         <div className={styles.overlay}>
             <div className={styles.modal}>
@@ -92,6 +120,35 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
                 </div>
 
                 <div className={styles.content}>
+                    <section className={styles.metricsSection}>
+                        <div className={styles.metricsGrid}>
+                            <div className={styles.metricCard}>
+                                <span className={styles.metricLabel}>Last Snapshot Date</span>
+                                <span className={styles.metricValue}>{lastSnapshot}</span>
+                            </div>
+                            <div className={styles.metricCard}>
+                                <span className={styles.metricLabel}>Earliest Snapshot Date</span>
+                                <span className={styles.metricValue}>{earliestSnapshot}</span>
+                            </div>
+                            <div className={styles.metricCard}>
+                                <span className={styles.metricLabel}>Number of Rows</span>
+                                <span className={styles.metricValue}>{rowCount}</span>
+                            </div>
+                            <div className={styles.metricCard}>
+                                <span className={styles.metricLabel}>Number of Columns</span>
+                                <span className={styles.metricValue}>{columnCount}</span>
+                            </div>
+                            <div className={styles.metricCard}>
+                                <span className={styles.metricLabel}>Average File Size</span>
+                                <span className={styles.metricValue}>{avgFileSize}</span>
+                            </div>
+                            <div className={styles.metricCard}>
+                                <span className={styles.metricLabel}>Partition Columns</span>
+                                <span className={styles.metricValue}>{partitionColumns}</span>
+                            </div>
+                        </div>
+                    </section>
+
                     <section className={styles.section}>
                         <div className={styles.sectionHeader} onClick={() => setSchemaExpanded(!schemaExpanded)}>
                             {schemaExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
