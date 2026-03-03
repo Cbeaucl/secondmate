@@ -16,6 +16,25 @@ export interface SystemInfo {
     python_version: string;
 }
 
+export type DataType = 'string' | 'integer' | 'boolean';
+export type UiInputType = 'text' | 'select' | 'radio' | 'toggle';
+
+export interface ConfigOptionItem {
+    label: string;
+    value: any;
+}
+
+export interface ConfigOption {
+    id: string;
+    label: string;
+    data_type: DataType;
+    ui_input_type: UiInputType;
+    current_value: any | null;
+    default_value: any | null;
+    options: ConfigOptionItem[] | null;
+    is_required: boolean;
+}
+
 declare global {
     interface Window {
         SECONDMATE_CONFIG?: {
@@ -78,6 +97,24 @@ export const api = {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/overview`);
         if (!response.ok) throw new Error('Failed to fetch table overview');
         return await response.json();
+    },
+
+    getConfigs: async (): Promise<ConfigOption[]> => {
+        const response = await fetch(`${API_BASE_URL}/configs`);
+        if (!response.ok) throw new Error('Failed to fetch configs');
+        return await response.json();
+    },
+
+    saveConfigs: async (configs: Record<string, any>): Promise<void> => {
+        const response = await fetch(`${API_BASE_URL}/configs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(configs)
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Failed to save configs');
+        }
     }
 };
 
