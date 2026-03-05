@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { TableOverview } from './TableOverview';
 import { api } from '../../services/api';
-import React from 'react';
 
 vi.mock('../../services/api');
 vi.mock('../Results/JsonView', () => ({
