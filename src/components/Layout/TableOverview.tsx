@@ -80,6 +80,15 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
         return p;
     });
 
+    // Flatten files for display (e.g. spread partition struct)
+    const flattenedFiles = files.map((f: any) => {
+        const { partition, ...rest } = f;
+        if (partition && typeof partition === 'object') {
+            return { ...rest, ...partition };
+        }
+        return f;
+    });
+
     // Calculate Metrics
     const lastSnapshot = snapshots.length > 0 ? new Date(snapshots[0].committed_at).toLocaleString() : 'N/A';
     const earliestSnapshot = snapshots.length > 0 ? new Date(snapshots[snapshots.length - 1].committed_at).toLocaleString() : 'N/A';
@@ -196,9 +205,9 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
 
                     <section className={styles.section}>
                         <h2>Iceberg Files</h2>
-                        {files.length > 0 ? (
+                        {flattenedFiles.length > 0 ? (
                             <div className={styles.gridWrapper}>
-                                <DataGrid columns={getColumns(files)} data={files} />
+                                <DataGrid columns={getColumns(flattenedFiles)} data={flattenedFiles} />
                             </div>
                         ) : (
                             <p className={styles.emptyText}>No files found.</p>

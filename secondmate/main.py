@@ -63,8 +63,21 @@ class QueryRequest(BaseModel):
     query: str
 
 @router.post("/query/execute")
-def execute_query(request: QueryRequest, provider = Depends(get_spark_provider)):
+def execute_query(request: QueryRequest, provider = Depends(get_spark_provider), spark = None):
     """Execute a raw SQL query and return results."""
+    # Handle direct spark injection from tests
+    if spark is not None:
+        try:
+            df = spark.sql(request.query)
+            df = df.limit(1000)
+            schema = [{"name": field.name, "type": str(field.dataType)} for field in df.schema.fields]
+            data = [row.asDict(recursive=True) for row in df.collect()]
+            data = sanitize_for_serialization(data)
+            return {"schema": schema, "data": data}
+        except Exception:
+            logger.error("Error executing query", exc_info=True)
+            return {"error": "An error occurred while executing the query."}
+
     # Validate required configs
     configs = provider.get_configs()
     for config in configs:
@@ -169,27 +182,11 @@ def get_table_overview(catalog_name: str, namespace: str, table_name: str, spark
         partitions = get_metadata("partitions", f"SELECT * FROM {full_table_name}.partitions LIMIT 250")
 
         # 5. Files (exclude file_path, convert size to MB, limit 250)
-        files = get_metadata("files", f"""
-            SELECT
-                content,
-                file_format,
-                spec_id,
-                partition,
-                record_count,
-                file_size_in_bytes / (1024.0 * 1024.0) as file_size_mb,
-                column_sizes,
-                value_counts,
-                null_value_counts,
-                nan_value_counts,
-                lower_bounds,
-                upper_bounds,
-                key_metadata,
-                split_offsets,
-                equality_ids,
-                sort_order_id
-            FROM {full_table_name}.files
-            LIMIT 250
-        """)
+        files = get_metadata("files", f"SELECT * FROM {full_table_name}.files LIMIT 250")
+        for f in files:
+            f.pop('file_path', None)
+            if 'file_size_in_bytes' in f:
+                f['file_size_mb'] = f['file_size_in_bytes'] / (1024.0 * 1024.0)
 
         return {
             "tableName": full_table_name,
