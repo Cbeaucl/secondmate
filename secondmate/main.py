@@ -169,12 +169,19 @@ def get_table_overview(catalog_name: str, namespace: str, table_name: str, spark
         partitions = get_metadata("partitions", f"SELECT * FROM {full_table_name}.partitions LIMIT 250")
 
         # 5. Files (exclude file_path, convert size to MB, limit 250)
+        partition_col = ""
+        try:
+            if "partition" in spark.table(f"{full_table_name}.files").columns:
+                partition_col = "partition,"
+        except Exception:
+            pass
+
         files = get_metadata("files", f"""
             SELECT
                 content,
                 file_format,
                 spec_id,
-                partition,
+                {partition_col}
                 record_count,
                 file_size_in_bytes / (1024.0 * 1024.0) as file_size_mb,
                 column_sizes,
