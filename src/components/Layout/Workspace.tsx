@@ -178,9 +178,9 @@ export const Workspace: React.FC = () => {
                                     )}
 
                                     {hasRun && !loading && result?.error && (
-                                        <div className="p-4 text-red-600 bg-red-50 border-l-4 border-red-500 m-4">
-                                            <h3 className="font-bold">Error</h3>
-                                            <p>{result.error}</p>
+                                        <div className={styles.errorContainer}>
+                                            <h3 className={styles.errorHeading}>Error</h3>
+                                            <pre className={styles.errorText}>{result.error}</pre>
                                         </div>
                                     )}
 
