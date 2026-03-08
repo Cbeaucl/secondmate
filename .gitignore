@@ -46,4 +46,6 @@ derby.log
 
 # Frontend Build Artifacts
 secondmate/static/
-SECONDMATE_LOGO.png
+
+#Full Size Image Assets
+generated_content/
