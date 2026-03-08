@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Database, Table, Folder, Search, Loader2, X } from 'lucide-react';
+import { Database, Table, Folder, Search, Loader2, X, Check } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { api } from '../../services/api';
 import { TreeNode } from './TreeNode';
@@ -24,6 +24,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [copiedNodeInfo, setCopiedNodeInfo] = useState<string | null>(null);
+
+    const handleCopySearchNode = (item: any) => {
+        if (item.type === 'table') {
+            const fullName = `${item.catalog}.${item.namespace}.${item.table}`;
+            navigator.clipboard.writeText(fullName);
+            setCopiedNodeInfo(fullName);
+            setTimeout(() => setCopiedNodeInfo(null), 2000);
+        }
+    };
 
     useEffect(() => {
         loadCatalogs();
@@ -182,28 +192,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview }) => {
                                 No results found
                             </div>
                         )}
-                        {!isSearching && searchResults.map((item, idx) => (
-                            <div key={idx} className={styles.treeRow} style={{ paddingLeft: '12px' }}>
-                                {item.type === 'catalog' && <Database size={14} className={styles.icon} color="#38bdf8" />}
-                                {item.type === 'namespace' && <Folder size={14} className={styles.icon} color="#fbbf24" />}
-                                {item.type === 'table' && <Table size={14} className={styles.icon} color="#a78bfa" />}
+                        {!isSearching && searchResults.map((item, idx) => {
+                            const fullName = item.type === 'table' ? `${item.catalog}.${item.namespace}.${item.table}` : '';
+                            const isCopied = copiedNodeInfo === fullName && item.type === 'table';
 
-                                <span className="truncate" style={{ marginLeft: '6px' }}>
-                                    {item.type === 'catalog' && item.catalog}
-                                    {item.type === 'namespace' && `${item.catalog}.${item.namespace}`}
-                                    {item.type === 'table' && `${item.catalog}.${item.namespace}.${item.table}`}
-                                </span>
+                            return (
+                                <div
+                                    key={idx}
+                                    className={styles.treeRow}
+                                    style={{ paddingLeft: '12px', cursor: item.type === 'table' ? 'pointer' : 'default' }}
+                                    onClick={item.type === 'table' ? () => handleCopySearchNode(item) : undefined}
+                                    title={item.type === 'table' ? "Click to copy table name" : undefined}
+                                >
+                                    {item.type === 'catalog' && <Database size={14} className={styles.icon} color="#38bdf8" />}
+                                    {item.type === 'namespace' && <Folder size={14} className={styles.icon} color="#fbbf24" />}
+                                    {item.type === 'table' && (
+                                        isCopied ? <Check size={14} className={styles.icon} color="#10b981" /> : <Table size={14} className={styles.icon} color="#a78bfa" />
+                                    )}
 
-                                {item.type === 'table' && onTableOverview && (
-                                    <TableMenu
-                                        catalog={item.catalog}
-                                        namespace={item.namespace}
-                                        table={item.table}
-                                        onTableOverview={onTableOverview}
-                                    />
-                                )}
-                            </div>
-                        ))}
+                                    <span className="truncate" style={{ marginLeft: '6px' }}>
+                                        {item.type === 'catalog' && item.catalog}
+                                        {item.type === 'namespace' && `${item.catalog}.${item.namespace}`}
+                                        {item.type === 'table' && fullName}
+                                    </span>
+
+                                    {item.type === 'table' && onTableOverview && (
+                                        <TableMenu
+                                            catalog={item.catalog}
+                                            namespace={item.namespace}
+                                            table={item.table}
+                                            onTableOverview={onTableOverview}
+                                        />
+                                    )}
+                                </div>
+                            );
+                        })}
                     </>
                 )}
             </div>
