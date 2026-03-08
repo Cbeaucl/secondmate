@@ -93,9 +93,39 @@ export const api = {
         return await response.json();
     },
 
-    getTableOverview: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
-        const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/overview`);
-        if (!response.ok) throw new Error('Failed to fetch table overview');
+    getTableSchema: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/schema`);
+        if (!response.ok) throw new Error('Failed to fetch table schema');
+        return await response.json();
+    },
+
+    getTableProperties: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/properties`);
+        if (!response.ok) throw new Error('Failed to fetch table properties');
+        return await response.json();
+    },
+
+    getTableSnapshots: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/snapshots`);
+        if (!response.ok) throw new Error('Failed to fetch table snapshots');
+        return await response.json();
+    },
+
+    getTablePartitions: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/partitions`);
+        if (!response.ok) throw new Error('Failed to fetch table partitions');
+        return await response.json();
+    },
+
+    getTableFiles: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/files`);
+        if (!response.ok) throw new Error('Failed to fetch table files');
+        return await response.json();
+    },
+
+    getTableMetrics: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/metrics`);
+        if (!response.ok) throw new Error('Failed to fetch table metrics');
         return await response.json();
     },
 

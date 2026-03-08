@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { X, ChevronDown, ChevronRight } from 'lucide-react';
 import { JsonView } from '../Results/JsonView';
 import { DataGrid } from '../Results/DataGrid';
 import { api } from '../../services/api';
@@ -12,58 +12,68 @@ interface TableOverviewProps {
     onClose: () => void;
 }
 
+const SkeletonMetric = () => (
+    <div className={`${styles.skeletonLoader} ${styles.skeletonMetric}`}></div>
+);
+
+const SkeletonGrid = () => (
+    <div className={styles.gridWrapper}>
+        <div className={`${styles.skeletonLoader} ${styles.skeletonGrid}`}></div>
+    </div>
+);
+
 export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace, table, onClose }) => {
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [overviewData, setOverviewData] = useState<any>(null);
     const [schemaExpanded, setSchemaExpanded] = useState(true);
 
+    const [schema, setSchema] = useState<any>(null);
+    const [properties, setProperties] = useState<any>(null);
+    const [snapshots, setSnapshots] = useState<any>(null);
+    const [partitions, setPartitions] = useState<any>(null);
+    const [files, setFiles] = useState<any>(null);
+    const [metrics, setMetrics] = useState<any>(null);
+
+    const [loadingSchema, setLoadingSchema] = useState(true);
+    const [loadingProperties, setLoadingProperties] = useState(true);
+    const [loadingSnapshots, setLoadingSnapshots] = useState(true);
+    const [loadingPartitions, setLoadingPartitions] = useState(true);
+    const [loadingFiles, setLoadingFiles] = useState(true);
+    const [loadingMetrics, setLoadingMetrics] = useState(true);
+
     useEffect(() => {
-        const fetchOverview = async () => {
-            setLoading(true);
-            try {
-                const data = await api.getTableOverview(catalog, namespace, table);
-                setOverviewData(data);
-            } catch (err: any) {
-                setError(err.message || 'Failed to fetch table overview');
-            } finally {
-                setLoading(false);
-            }
-        };
+        setLoadingSchema(true);
+        setLoadingProperties(true);
+        setLoadingSnapshots(true);
+        setLoadingPartitions(true);
+        setLoadingFiles(true);
+        setLoadingMetrics(true);
+        setError(null);
 
-        fetchOverview();
+        api.getTableSchema(catalog, namespace, table)
+            .then(setSchema).catch(err => setError(err.message))
+            .finally(() => setLoadingSchema(false));
+
+        api.getTableProperties(catalog, namespace, table)
+            .then(setProperties).catch(err => setError(err.message))
+            .finally(() => setLoadingProperties(false));
+
+        api.getTableSnapshots(catalog, namespace, table)
+            .then(setSnapshots).catch(err => setError(err.message))
+            .finally(() => setLoadingSnapshots(false));
+
+        api.getTablePartitions(catalog, namespace, table)
+            .then(setPartitions).catch(err => setError(err.message))
+            .finally(() => setLoadingPartitions(false));
+
+        api.getTableFiles(catalog, namespace, table)
+            .then(setFiles).catch(err => setError(err.message))
+            .finally(() => setLoadingFiles(false));
+
+        api.getTableMetrics(catalog, namespace, table)
+            .then(setMetrics).catch(err => setError(err.message))
+            .finally(() => setLoadingMetrics(false));
+
     }, [catalog, namespace, table]);
-
-    if (loading) {
-        return (
-            <div className={styles.overlay}>
-                <div className={styles.modal}>
-                    <div className={styles.loadingContainer}>
-                        <Loader2 className={styles.spinner} />
-                        <span>Loading Table Overview...</span>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className={styles.overlay}>
-                <div className={styles.modal}>
-                    <div className={styles.header}>
-                        <h2>Error</h2>
-                        <button onClick={onClose} className={styles.closeButton}><X size={20} /></button>
-                    </div>
-                    <div className={styles.content}>
-                        <p className={styles.errorText}>{error}</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    const { tableName, schema, properties, snapshots, partitions, files } = overviewData;
 
     // Helper to get columns for DataGrid
     const getColumns = (data: any[]) => {
@@ -72,41 +82,13 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
     };
 
     // Flatten partitions for display
-    const flattenedPartitions = partitions.map((p: any) => {
+    const flattenedPartitions = partitions?.map((p: any) => {
         const { partition, ...rest } = p;
         if (partition && typeof partition === 'object') {
             return { ...rest, ...partition };
         }
         return p;
-    });
-
-    // Calculate Metrics
-    const lastSnapshot = snapshots.length > 0 ? new Date(snapshots[0].committed_at).toLocaleString() : 'N/A';
-    const earliestSnapshot = snapshots.length > 0 ? new Date(snapshots[snapshots.length - 1].committed_at).toLocaleString() : 'N/A';
-
-    let rowCount = 'N/A';
-    if (snapshots.length > 0 && snapshots[0].summary && snapshots[0].summary['total-records']) {
-        rowCount = parseInt(snapshots[0].summary['total-records']).toLocaleString();
-    } else if (files.length > 0) {
-        const total = files.reduce((acc: number, f: any) => acc + (f.record_count || 0), 0);
-        rowCount = total.toLocaleString();
-    }
-
-    const columnCount = schema?.fields ? schema.fields.length.toString() : 'N/A';
-
-    let avgFileSize = 'N/A';
-    if (files.length > 0) {
-        const totalSize = files.reduce((acc: number, f: any) => acc + (f.file_size_mb || 0), 0);
-        avgFileSize = (totalSize / files.length).toFixed(2) + ' MB';
-    }
-
-    let partitionColumns = 'N/A';
-    if (partitions.length > 0 && partitions[0].partition && typeof partitions[0].partition === 'object') {
-        const keys = Object.keys(partitions[0].partition);
-        if (keys.length > 0) {
-            partitionColumns = keys.join(', ');
-        }
-    }
+    }) || [];
 
     return (
         <div className={styles.overlay}>
@@ -114,37 +96,43 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
                 <div className={styles.header}>
                     <div className={styles.titleGroup}>
                         <h1>Table Overview</h1>
-                        <span className={styles.tableName}>{tableName}</span>
+                        <span className={styles.tableName}>{catalog}.{namespace}.{table}</span>
                     </div>
                     <button onClick={onClose} className={styles.closeButton}><X size={20} /></button>
                 </div>
 
                 <div className={styles.content}>
+                    {error && (
+                        <div className={styles.errorText}>
+                            <strong>Error loading some data:</strong> {error}
+                        </div>
+                    )}
+
                     <section className={styles.metricsSection}>
                         <div className={styles.metricsGrid}>
                             <div className={styles.metricCard}>
                                 <span className={styles.metricLabel}>Last Snapshot Date</span>
-                                <span className={styles.metricValue}>{lastSnapshot}</span>
+                                {loadingMetrics ? <SkeletonMetric /> : <span className={styles.metricValue}>{metrics?.last_snapshot || 'N/A'}</span>}
                             </div>
                             <div className={styles.metricCard}>
                                 <span className={styles.metricLabel}>Earliest Snapshot Date</span>
-                                <span className={styles.metricValue}>{earliestSnapshot}</span>
+                                {loadingMetrics ? <SkeletonMetric /> : <span className={styles.metricValue}>{metrics?.earliest_snapshot || 'N/A'}</span>}
                             </div>
                             <div className={styles.metricCard}>
                                 <span className={styles.metricLabel}>Number of Rows</span>
-                                <span className={styles.metricValue}>{rowCount}</span>
+                                {loadingMetrics ? <SkeletonMetric /> : <span className={styles.metricValue}>{metrics?.row_count || 'N/A'}</span>}
                             </div>
                             <div className={styles.metricCard}>
                                 <span className={styles.metricLabel}>Number of Columns</span>
-                                <span className={styles.metricValue}>{columnCount}</span>
+                                {loadingMetrics ? <SkeletonMetric /> : <span className={styles.metricValue}>{metrics?.column_count || 'N/A'}</span>}
                             </div>
                             <div className={styles.metricCard}>
                                 <span className={styles.metricLabel}>Average File Size</span>
-                                <span className={styles.metricValue}>{avgFileSize}</span>
+                                {loadingMetrics ? <SkeletonMetric /> : <span className={styles.metricValue}>{metrics?.avg_file_size || 'N/A'}</span>}
                             </div>
                             <div className={styles.metricCard}>
                                 <span className={styles.metricLabel}>Partition Columns</span>
-                                <span className={styles.metricValue}>{partitionColumns}</span>
+                                {loadingMetrics ? <SkeletonMetric /> : <span className={styles.metricValue}>{metrics?.partition_columns || 'N/A'}</span>}
                             </div>
                         </div>
                     </section>
@@ -156,52 +144,60 @@ export const TableOverview: React.FC<TableOverviewProps> = ({ catalog, namespace
                         </div>
                         {schemaExpanded && (
                             <div className={styles.jsonWrapper}>
-                                <JsonView data={schema} />
+                                {loadingSchema ? <SkeletonGrid /> : <JsonView data={schema} />}
                             </div>
                         )}
                     </section>
 
                     <section className={styles.section}>
                         <h2>Table Properties</h2>
-                        {properties.length > 0 ? (
-                            <div className={styles.gridWrapper}>
-                                <DataGrid columns={getColumns(properties)} data={properties} />
-                            </div>
-                        ) : (
-                            <p className={styles.emptyText}>No properties found.</p>
+                        {loadingProperties ? <SkeletonGrid /> : (
+                            properties?.length > 0 ? (
+                                <div className={styles.gridWrapper}>
+                                    <DataGrid columns={getColumns(properties)} data={properties} />
+                                </div>
+                            ) : (
+                                <p className={styles.emptyText}>No properties found.</p>
+                            )
                         )}
                     </section>
 
                     <section className={styles.section}>
                         <h2>Iceberg Snapshots</h2>
-                        {snapshots.length > 0 ? (
-                            <div className={styles.gridWrapper}>
-                                <DataGrid columns={getColumns(snapshots)} data={snapshots} />
-                            </div>
-                        ) : (
-                            <p className={styles.emptyText}>No snapshots found.</p>
+                        {loadingSnapshots ? <SkeletonGrid /> : (
+                            snapshots?.length > 0 ? (
+                                <div className={styles.gridWrapper}>
+                                    <DataGrid columns={getColumns(snapshots)} data={snapshots} />
+                                </div>
+                            ) : (
+                                <p className={styles.emptyText}>No snapshots found.</p>
+                            )
                         )}
                     </section>
 
                     <section className={styles.section}>
                         <h2>Iceberg Partitions</h2>
-                        {flattenedPartitions.length > 0 ? (
-                            <div className={styles.gridWrapper}>
-                                <DataGrid columns={getColumns(flattenedPartitions)} data={flattenedPartitions} />
-                            </div>
-                        ) : (
-                            <p className={styles.emptyText}>No partitions found.</p>
+                        {loadingPartitions ? <SkeletonGrid /> : (
+                            flattenedPartitions.length > 0 ? (
+                                <div className={styles.gridWrapper}>
+                                    <DataGrid columns={getColumns(flattenedPartitions)} data={flattenedPartitions} />
+                                </div>
+                            ) : (
+                                <p className={styles.emptyText}>No partitions found.</p>
+                            )
                         )}
                     </section>
 
                     <section className={styles.section}>
                         <h2>Iceberg Files</h2>
-                        {files.length > 0 ? (
-                            <div className={styles.gridWrapper}>
-                                <DataGrid columns={getColumns(files)} data={files} />
-                            </div>
-                        ) : (
-                            <p className={styles.emptyText}>No files found.</p>
+                        {loadingFiles ? <SkeletonGrid /> : (
+                            files?.length > 0 ? (
+                                <div className={styles.gridWrapper}>
+                                    <DataGrid columns={getColumns(files)} data={files} />
+                                </div>
+                            ) : (
+                                <p className={styles.emptyText}>No files found.</p>
+                            )
                         )}
                     </section>
                 </div>

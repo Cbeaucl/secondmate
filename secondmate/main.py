@@ -19,28 +19,9 @@ from secondmate.providers.local_spark import LocalSparkProvider
 from secondmate.dev_data import initialize_dev_data
 from secondmate.models import ConfigOption
 from typing import Dict, Any, List
-import re
-import base64
-
-def sanitize_for_serialization(obj):
-    if isinstance(obj, dict):
-        return {str(k): sanitize_for_serialization(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [sanitize_for_serialization(v) for v in obj]
-    elif isinstance(obj, tuple):
-        return tuple(sanitize_for_serialization(v) for v in obj)
-    elif isinstance(obj, (bytes, bytearray)):
-        try:
-            return obj.decode('utf-8')
-        except UnicodeDecodeError:
-            return base64.b64encode(obj).decode('utf-8')
-    return obj
-
-def validate_identifier(name: str):
-    """Validate that an identifier only contains alphanumeric characters, underscores, and dots."""
-    if not re.match(r"^[a-zA-Z0-9_.]+\Z", name):
-        raise HTTPException(status_code=400, detail=f"Invalid identifier: {name}")
-
+from secondmate.utils import sanitize_for_serialization, validate_identifier
+from secondmate.routers.table import router as table_router
+import logging
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
@@ -132,84 +113,6 @@ def get_tables(catalog_name: str, namespace: str, spark: SparkSession = Depends(
         logger.error(f"Error retrieving tables for {catalog_name}.{namespace}", exc_info=True)
         return {"tables": [], "error": "Unable to retrieve tables."}
 
-@router.get("/catalogs/{catalog_name}/namespaces/{namespace}/tables/{table_name}/overview")
-def get_table_overview(catalog_name: str, namespace: str, table_name: str, spark: SparkSession = Depends(get_spark_session)):
-    """Get an overview of an Iceberg table including schema, properties, snapshots, partitions, and files."""
-    validate_identifier(catalog_name)
-    validate_identifier(namespace)
-    validate_identifier(table_name)
-
-    full_table_name = f"{catalog_name}.{namespace}.{table_name}"
-
-    try:
-        # 1. Schema
-        df = spark.table(full_table_name)
-        schema_json = df.schema.jsonValue()
-
-        # Helper to get data from metadata tables or return empty list if not supported
-        def get_metadata(suffix, query=None):
-            try:
-                if query:
-                    m_df = spark.sql(query)
-                else:
-                    m_df = spark.sql(f"SELECT * FROM {full_table_name}.{suffix}")
-                rows = [row.asDict(recursive=True) for row in m_df.collect()]
-                return sanitize_for_serialization(rows)
-            except Exception as e:
-                logger.warning(f"Metadata table {suffix} not available for {full_table_name}: {e}")
-                return []
-
-        # 2. Properties
-        properties = get_metadata("properties", f"SHOW TBLPROPERTIES {full_table_name}")
-
-        # 3. Snapshots (ordered by latest, limit 250)
-        snapshots = get_metadata("snapshots", f"SELECT * FROM {full_table_name}.snapshots ORDER BY committed_at DESC LIMIT 250")
-
-        # 4. Partitions (limit 250)
-        partitions = get_metadata("partitions", f"SELECT * FROM {full_table_name}.partitions LIMIT 250")
-
-        # 5. Files (exclude file_path, convert size to MB, limit 250)
-        partition_col = ""
-        try:
-            if "partition" in spark.table(f"{full_table_name}.files").columns:
-                partition_col = "partition,"
-        except Exception:
-            pass
-
-        files = get_metadata("files", f"""
-            SELECT
-                content,
-                file_format,
-                spec_id,
-                {partition_col}
-                record_count,
-                file_size_in_bytes / (1024.0 * 1024.0) as file_size_mb,
-                column_sizes,
-                value_counts,
-                null_value_counts,
-                nan_value_counts,
-                lower_bounds,
-                upper_bounds,
-                key_metadata,
-                split_offsets,
-                equality_ids,
-                sort_order_id
-            FROM {full_table_name}.files
-            LIMIT 250
-        """)
-
-        return {
-            "tableName": full_table_name,
-            "schema": schema_json,
-            "properties": properties,
-            "snapshots": snapshots,
-            "partitions": partitions,
-            "files": files
-        }
-    except Exception:
-        logger.error(f"Error retrieving overview for {full_table_name}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Unable to retrieve overview for table {full_table_name}")
-
 @router.get("/configs", response_model=List[ConfigOption])
 def get_configs(provider=Depends(get_spark_provider)):
     """Get the current configurations."""
@@ -291,6 +194,7 @@ def search_catalog(q: str, spark: SparkSession = Depends(get_spark_session)):
 
 # Include the API router
 app.include_router(router, prefix="/api")
+app.include_router(table_router, prefix="/api")
 
 # Mount static files
 # Use environment variable or fallback to local assumption

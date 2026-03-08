@@ -29,3 +29,8 @@ packages = ["secondmate"]
 
 [tool.hatch.build.targets.sdist.force-include]
 "secondmate/static" = "secondmate/static"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
