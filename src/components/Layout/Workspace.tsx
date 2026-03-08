@@ -11,6 +11,7 @@ import { api, type QueryResult, type ConfigOption } from '../../services/api';
 import { useQueryHistory } from '../../hooks/useQueryHistory';
 import { QueryHistory } from '../History/QueryHistory';
 import { ConfigModal } from '../Editor/ConfigModal';
+import logoUrl from '../../assets/logo.png';
 
 export const Workspace: React.FC = () => {
     const [query, setQuery] = useState('-- Write your SparkSQL here\nSELECT * FROM user.sales.transactions LIMIT 100;');
@@ -164,9 +165,7 @@ export const Workspace: React.FC = () => {
 
                                     {!hasRun && (
                                         <div className={styles.emptyState}>
-                                            <div className={styles.emptyStateHeader}>
-                                                🫡Welcome Aboard Matey!
-                                            </div>
+                                            <img src={logoUrl} alt="SecondMate Logo" style={{ maxWidth: '400px', width: '100%', marginBottom: '1rem', objectFit: 'contain' }} />
                                             <div className={styles.emptyStateMain}>
                                                 Welcome To Secondmate! Get started by entering your query above.
                                             </div>
