@@ -14,6 +14,7 @@ export interface TreeNodeProps {
     isLoading?: boolean;
     forceExpand?: boolean;
     onTableOverview?: (catalog: string, namespace: string, table: string) => void;
+    onShowDdl?: (catalog: string, namespace: string, table: string) => void;
 }
 
 export const TreeNode: React.FC<TreeNodeProps> = ({
@@ -26,7 +27,8 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
     onToggle,
     isLoading,
     forceExpand,
-    onTableOverview
+    onTableOverview,
+    onShowDdl
 }) => {
     const [copied, setCopied] = useState(false);
 
@@ -63,12 +65,13 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
                 {type === 'table' && <div style={{ width: 16 }} />}
                 <Icon size={14} className={styles.icon} color={color} />
                 <span className="truncate">{label}</span>
-                {type === 'table' && onTableOverview && catalog && namespace && (
+                {type === 'table' && onTableOverview && onShowDdl && catalog && namespace && (
                     <TableMenu
                         catalog={catalog}
                         namespace={namespace}
                         table={label}
                         onTableOverview={onTableOverview}
+                        onShowDdl={onShowDdl}
                     />
                 )}
             </div>

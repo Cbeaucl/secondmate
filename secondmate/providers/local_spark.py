@@ -46,7 +46,7 @@ class LocalSparkProvider(SparkProvider):
                 .config("spark.driver.bindAddress", "127.0.0.1")
                 .config("spark.driver.host", "127.0.0.1")
                 # Iceberg Configuration
-                .config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-4.0_2.13:1.10.0")
+                .config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.5.2")
                 .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
                 .config("spark.sql.catalog.user", "org.apache.iceberg.spark.SparkCatalog")
                 .config("spark.sql.catalog.user.type", "hadoop")

@@ -7,9 +7,10 @@ import { TableMenu } from './TableMenu';
 
 interface SidebarProps {
     onTableOverview?: (catalog: string, namespace: string, table: string) => void;
+    onShowDdl?: (catalog: string, namespace: string, table: string) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview, onShowDdl }) => {
     const [catalogs, setCatalogs] = useState<string[]>([]);
     const [expandedCatalogs, setExpandedCatalogs] = useState<Record<string, boolean>>({});
     const [namespaces, setNamespaces] = useState<Record<string, string[]>>({});
@@ -174,6 +175,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview }) => {
                                             catalog={catalog}
                                             namespace={ns}
                                             onTableOverview={onTableOverview}
+                                            onShowDdl={onShowDdl}
                                         />
                                     ))}
                                 </TreeNode>
@@ -216,12 +218,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview }) => {
                                         {item.type === 'table' && fullName}
                                     </span>
 
-                                    {item.type === 'table' && onTableOverview && (
+                                    {item.type === 'table' && onTableOverview && onShowDdl && (
                                         <TableMenu
                                             catalog={item.catalog}
                                             namespace={item.namespace}
                                             table={item.table}
                                             onTableOverview={onTableOverview}
+                                            onShowDdl={onShowDdl}
                                         />
                                     )}
                                 </div>

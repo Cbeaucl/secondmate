@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MoreVertical, FileText } from 'lucide-react';
+import { MoreVertical, FileText, Code } from 'lucide-react';
 import styles from './Sidebar.module.css';
 
 export interface TableMenuProps {
@@ -7,9 +7,10 @@ export interface TableMenuProps {
     namespace: string;
     table: string;
     onTableOverview: (catalog: string, namespace: string, table: string) => void;
+    onShowDdl: (catalog: string, namespace: string, table: string) => void;
 }
 
-export const TableMenu: React.FC<TableMenuProps> = ({ catalog, namespace, table, onTableOverview }) => {
+export const TableMenu: React.FC<TableMenuProps> = ({ catalog, namespace, table, onTableOverview, onShowDdl }) => {
     const [menuOpen, setMenuOpen] = useState<{ x: number, y: number } | null>(null);
 
     const handleMoreClick = (e: React.MouseEvent) => {
@@ -44,6 +45,16 @@ export const TableMenu: React.FC<TableMenuProps> = ({ catalog, namespace, table,
                     >
                         <FileText size={14} />
                         <span>Table Overview</span>
+                    </div>
+                    <div
+                        className={styles.menuItem}
+                        onClick={() => {
+                            onShowDdl(catalog, namespace, table);
+                            setMenuOpen(null);
+                        }}
+                    >
+                        <Code size={14} />
+                        <span>Show DDL</span>
                     </div>
                 </div>
             )}

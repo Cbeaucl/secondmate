@@ -129,6 +129,12 @@ export const api = {
         return await response.json();
     },
 
+    getTableDdl: async (catalogName: string, namespace: string, tableName: string): Promise<{ ddl: string }> => {
+        const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/ddl`);
+        if (!response.ok) throw new Error('Failed to fetch table DDL');
+        return await response.json();
+    },
+
     getConfigs: async (): Promise<ConfigOption[]> => {
         const response = await fetch(`${API_BASE_URL}/configs`);
         if (!response.ok) throw new Error('Failed to fetch configs');

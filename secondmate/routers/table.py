@@ -36,6 +36,17 @@ def get_schema(catalog_name: str, namespace: str, table_name: str, spark: SparkS
         logger.error(f"Error retrieving schema for {full_table_name}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/catalogs/{catalog_name}/namespaces/{namespace}/tables/{table_name}/ddl")
+def get_ddl(catalog_name: str, namespace: str, table_name: str, spark: SparkSession = Depends(get_spark_session)):
+    full_table_name = get_full_table_name(catalog_name, namespace, table_name)
+    try:
+        df = spark.sql(f"SHOW CREATE TABLE {full_table_name}")
+        ddl = df.collect()[0][0]
+        return {"ddl": ddl}
+    except Exception as e:
+        logger.error(f"Error retrieving DDL for {full_table_name}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/catalogs/{catalog_name}/namespaces/{namespace}/tables/{table_name}/properties")
 def get_properties(catalog_name: str, namespace: str, table_name: str, spark: SparkSession = Depends(get_spark_session)):
     full_table_name = get_full_table_name(catalog_name, namespace, table_name)
