@@ -13,11 +13,7 @@ class TestSecurityFixes(unittest.TestCase):
         self.mock_spark.sql.side_effect = self.exception
         request = QueryRequest(query="SELECT * FROM users")
 
-        mock_provider = MagicMock()
-        mock_provider.get_session.return_value = self.mock_spark
-        mock_provider.get_configs.return_value = []
-
-        response = execute_query(request, provider=mock_provider)
+        response = execute_query(request, spark=self.mock_spark)
 
         self.assertIn("error", response)
         self.assertEqual(response["error"], "An error occurred while executing the query.")

@@ -42,12 +42,7 @@ class TestApiNestedStructs(unittest.TestCase):
 
         # Execute request
         request = QueryRequest(query="SELECT * FROM test_table")
-
-        mock_provider = MagicMock()
-        mock_provider.get_session.return_value = mock_spark
-        mock_provider.get_configs.return_value = []
-
-        response = execute_query(request, provider=mock_provider)
+        response = execute_query(request, spark=mock_spark)
 
         # Verify schema is correct (stringified types for JSON serialization)
         self.assertEqual(len(response["schema"]), 2)
