@@ -68,7 +68,7 @@ def execute_query(request: QueryRequest, provider = Depends(get_spark_provider))
         return {"schema": schema, "data": data}
     except Exception as e:
         logger.error("Error executing query", exc_info=True)
-        return {"error": "An error occurred while executing the query."}
+        return {"error": str(e)}
 
 @router.get("/catalogs")
 def get_catalogs(spark: SparkSession = Depends(get_spark_session)):
