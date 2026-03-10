@@ -29,6 +29,16 @@ class TestTableRouter(unittest.TestCase):
         self.assertEqual(result, {"type": "struct", "fields": []})
         self.mock_spark.table.assert_called_with("local.default.test_table")
 
+    def test_get_ddl_success(self):
+        mock_df = MagicMock()
+        mock_df.collect.return_value = [["CREATE TABLE local.default.test_table (id INT)"]]
+        self.mock_spark.sql.return_value = mock_df
+
+        from secondmate.routers.table import get_ddl
+        result = get_ddl(self.catalog, self.namespace, self.table, spark=self.mock_spark)
+        self.assertEqual(result, {"ddl": "CREATE TABLE local.default.test_table (id INT)"})
+        self.mock_spark.sql.assert_called_with("SHOW CREATE TABLE local.default.test_table")
+
     def test_get_properties_success(self):
         mock_df = MagicMock()
         # Row needs to be converted properly by asDict
