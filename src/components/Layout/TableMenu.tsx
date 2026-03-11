@@ -3,6 +3,7 @@ import { MoreVertical, FileText, Code } from 'lucide-react';
 import styles from './Sidebar.module.css';
 
 export interface TableMenuProps {
+    isView?: boolean;
     catalog: string;
     namespace: string;
     table: string;
@@ -10,7 +11,8 @@ export interface TableMenuProps {
     onShowDdl: (catalog: string, namespace: string, table: string) => void;
 }
 
-export const TableMenu: React.FC<TableMenuProps> = ({ catalog, namespace, table, onTableOverview, onShowDdl }) => {
+export const TableMenu: React.FC<TableMenuProps> = ({ catalog, namespace, table,
+    isView, onTableOverview, onShowDdl }) => {
     const [menuOpen, setMenuOpen] = useState<{ x: number, y: number } | null>(null);
 
     const handleMoreClick = (e: React.MouseEvent) => {
@@ -36,16 +38,18 @@ export const TableMenu: React.FC<TableMenuProps> = ({ catalog, namespace, table,
                     style={{ top: menuOpen.y, left: menuOpen.x }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div
-                        className={styles.menuItem}
-                        onClick={() => {
-                            onTableOverview(catalog, namespace, table);
-                            setMenuOpen(null);
-                        }}
-                    >
-                        <FileText size={14} />
-                        <span>Table Overview</span>
-                    </div>
+                    {!isView && (
+                        <div
+                            className={styles.menuItem}
+                            onClick={() => {
+                                onTableOverview(catalog, namespace, table);
+                                setMenuOpen(null);
+                            }}
+                        >
+                            <FileText size={14} />
+                            <span>Table Overview</span>
+                        </div>
+                    )}
                     <div
                         className={styles.menuItem}
                         onClick={() => {
