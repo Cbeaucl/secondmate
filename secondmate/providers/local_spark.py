@@ -46,10 +46,14 @@ class LocalSparkProvider(SparkProvider):
                 .config("spark.driver.bindAddress", "127.0.0.1")
                 .config("spark.driver.host", "127.0.0.1")
                 # Iceberg Configuration
-                .config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-4.0_2.13:1.10.0")
+                .config("spark.jars.packages", "org.xerial:sqlite-jdbc:3.45.1.0,org.apache.iceberg:iceberg-spark-runtime-4.0_2.13:1.10.0")
                 .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
                 .config("spark.sql.catalog.user", "org.apache.iceberg.spark.SparkCatalog")
-                .config("spark.sql.catalog.user.type", "hadoop")
+                .config("spark.sql.catalog.user.type", "jdbc")
+                .config("spark.sql.catalog.user.uri", "jdbc:sqlite:iceberg_catalog.db")
+                .config("spark.sql.catalog.user.jdbc.user", "user")
+                .config("spark.sql.catalog.user.jdbc.password", "password")
+                .config("spark.sql.catalog.user.jdbc.schema-version", "V1")
                 .config("spark.sql.catalog.user.warehouse", "warehouse")
             )
 
