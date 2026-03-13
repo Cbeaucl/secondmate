@@ -73,11 +73,11 @@ export const api = {
         return data.namespaces;
     },
 
-    getTables: async (catalogName: string, namespace: string): Promise<string[]> => {
+    getTables: async (catalogName: string, namespace: string): Promise<{name: string, type: 'table' | 'view'}[]> => {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables`);
         if (!response.ok) throw new Error('Failed to fetch tables');
         const data = await response.json();
-        return data.tables;
+        return data.items;
     },
 
     searchCatalog: async (query: string): Promise<any[]> => {
