@@ -101,14 +101,27 @@ def get_namespaces(catalog_name: str, spark: SparkSession = Depends(get_spark_se
 
 @router.get("/catalogs/{catalog_name}/namespaces/{namespace}/tables")
 def get_tables(catalog_name: str, namespace: str, spark: SparkSession = Depends(get_spark_session)):
-    """List tables in a specific namespace."""
+    """List tables and views in a specific namespace."""
     validate_identifier(catalog_name)
     validate_identifier(namespace)
     try:
-        df = spark.sql(f"SHOW TABLES IN {catalog_name}.{namespace}")
-        # Columns: 'namespace', 'tableName', 'isTemporary'
-        tables = [row.tableName for row in df.collect()]
-        return {"tables": tables}
+        items_dict = {}
+
+        # 1. Get Tables (which also includes views, but we'll flag them as tables initially)
+        df_tables = spark.sql(f"SHOW TABLES IN {catalog_name}.{namespace}")
+        for row in df_tables.collect():
+            items_dict[row.tableName] = "table"
+
+        # 2. Get Views (to override the type of views)
+        try:
+            df_views = spark.sql(f"SHOW VIEWS IN {catalog_name}.{namespace}")
+            for row in df_views.collect():
+                items_dict[row.viewName] = "view"
+        except Exception as e:
+            logger.debug(f"Views not supported for {catalog_name}.{namespace}: {e}")
+
+        items = [{"name": name, "type": type} for name, type in items_dict.items()]
+        return {"items": items}
     except Exception:
         logger.error(f"Error retrieving tables for {catalog_name}.{namespace}", exc_info=True)
         return {"tables": [], "error": "Unable to retrieve tables."}
@@ -169,17 +182,27 @@ def search_catalog(q: str, spark: SparkSession = Depends(get_spark_session)):
                     
                     try:
                         # 3. Search Tables within Namespace
+                        items_dict = {}
                         df_tables = spark.sql(f"SHOW TABLES IN {cat}.{ns}")
-                        tables = [row.tableName for row in df_tables.collect()]
-                        
-                        for table in tables:
-                            if query in table.lower():
+                        for row in df_tables.collect():
+                            items_dict[row.tableName] = "table"
+
+                        # 4. Search Views within Namespace (override type)
+                        try:
+                            df_views = spark.sql(f"SHOW VIEWS IN {cat}.{ns}")
+                            for row in df_views.collect():
+                                items_dict[row.viewName] = "view"
+                        except Exception as e:
+                            logger.debug(f"Views not supported for {cat}.{ns}: {e}")
+
+                        for name, item_type in items_dict.items():
+                            if query in name.lower():
                                 results.append({
-                                    "type": "table", 
+                                    "type": item_type, 
                                     "catalog": cat, 
                                     "namespace": ns, 
-                                    "table": table,
-                                    "name": table
+                                    "table": name,
+                                    "name": name
                                 })
                     except Exception:
                         continue # Ignore individual failures

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Database, Table, Folder, ChevronRight, ChevronDown, Loader2, Check } from 'lucide-react';
+import { Database, Table, Folder, ChevronRight, ChevronDown, Loader2, Check, Eye } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { TableMenu } from './TableMenu';
 
 export interface TreeNodeProps {
     label: string;
-    type: 'catalog' | 'namespace' | 'table';
+    type: 'catalog' | 'namespace' | 'table' | 'view';
     catalog?: string;
     namespace?: string;
     children?: React.ReactNode;
@@ -33,7 +33,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
     const [copied, setCopied] = useState(false);
 
     const handleCopy = (e: React.MouseEvent) => {
-        if (type === 'table' && catalog && namespace) {
+        if ((type === 'table' || type === 'view') && catalog && namespace) {
             e.stopPropagation();
             const fullName = `${catalog}.${namespace}.${label}`;
             navigator.clipboard.writeText(fullName);
@@ -44,7 +44,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         }
     };
 
-    const Icon = type === 'catalog' ? Database : type === 'namespace' ? Folder : (copied ? Check : Table);
+    const Icon = type === 'catalog' ? Database : type === 'namespace' ? Folder : type === 'view' ? Eye : (copied ? Check : Table);
     const color = type === 'catalog' ? '#38bdf8' : type === 'namespace' ? '#fbbf24' : (copied ? '#10b981' : '#a78bfa');
     const showChildren = forceExpand || isExpanded;
 
@@ -52,24 +52,25 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         <div className={styles.treeItem}>
             <div
                 className={styles.treeRow}
-                onClick={type === 'table' ? handleCopy : onToggle}
+                onClick={(type === 'table' || type === 'view') ? handleCopy : onToggle}
                 style={{ cursor: 'pointer' }}
-                title={type === 'table' ? "Click to copy table name" : undefined}
+                title={(type === 'table' || type === 'view') ? "Click to copy name" : undefined}
             >
-                {type !== 'table' && (
+                {(type !== 'table' && type !== 'view') && (
                     <div style={{ width: 16, display: 'flex', alignItems: 'center' }}>
                         {isLoading ? <Loader2 size={12} className={styles.spinner} /> :
                             showChildren ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     </div>
                 )}
-                {type === 'table' && <div style={{ width: 16 }} />}
+                {(type === 'table' || type === 'view') && <div style={{ width: 16 }} />}
                 <Icon size={14} className={styles.icon} color={color} />
                 <span className="truncate">{label}</span>
-                {type === 'table' && onTableOverview && onShowDdl && catalog && namespace && (
+                {(type === 'table' || type === 'view') && onTableOverview && onShowDdl && catalog && namespace && (
                     <TableMenu
                         catalog={catalog}
                         namespace={namespace}
                         table={label}
+                        isView={type === 'view'}
                         onTableOverview={onTableOverview}
                         onShowDdl={onShowDdl}
                     />

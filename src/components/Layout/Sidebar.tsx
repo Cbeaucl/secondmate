@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Database, Table, Folder, Search, Loader2, X, Check } from 'lucide-react';
+import { Database, Table, Folder, Search, Loader2, X, Check, Eye } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { api } from '../../services/api';
 import { TreeNode } from './TreeNode';
@@ -15,7 +15,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview, onShowDdl }) 
     const [expandedCatalogs, setExpandedCatalogs] = useState<Record<string, boolean>>({});
     const [namespaces, setNamespaces] = useState<Record<string, string[]>>({});
     const [expandedNamespaces, setExpandedNamespaces] = useState<Record<string, boolean>>({}); // key: catalog.namespace
-    const [tables, setTables] = useState<Record<string, string[]>>({}); // key: catalog.namespace
+    const [tables, setTables] = useState<Record<string, {name: string, type: 'table' | 'view'}[]>>({}); // key: catalog.namespace
     const [loading, setLoading] = useState<Record<string, boolean>>({}); // key: node id
 
     // Tab State
@@ -28,7 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview, onShowDdl }) 
     const [copiedNodeInfo, setCopiedNodeInfo] = useState<string | null>(null);
 
     const handleCopySearchNode = (item: any) => {
-        if (item.type === 'table') {
+        if (item.type === 'table' || item.type === 'view') {
             const fullName = `${item.catalog}.${item.namespace}.${item.table}`;
             navigator.clipboard.writeText(fullName);
             setCopiedNodeInfo(fullName);
@@ -167,11 +167,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview, onShowDdl }) 
                                     isLoading={loading[`${catalog}.${ns}`]}
                                     onToggle={() => toggleNamespace(catalog, ns)}
                                 >
-                                    {tables[`${catalog}.${ns}`]?.map(table => (
+                                    {tables[`${catalog}.${ns}`]?.map(tableObj => (
                                         <TreeNode
-                                            key={table}
-                                            label={table}
-                                            type="table"
+                                            key={tableObj.name}
+                                            label={tableObj.name}
+                                            type={tableObj.type as 'table' | 'view'}
                                             catalog={catalog}
                                             namespace={ns}
                                             onTableOverview={onTableOverview}
@@ -195,34 +195,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ onTableOverview, onShowDdl }) 
                             </div>
                         )}
                         {!isSearching && searchResults.map((item, idx) => {
-                            const fullName = item.type === 'table' ? `${item.catalog}.${item.namespace}.${item.table}` : '';
-                            const isCopied = copiedNodeInfo === fullName && item.type === 'table';
+                            const isTableOrView = item.type === 'table' || item.type === 'view';
+                            const fullName = isTableOrView ? `${item.catalog}.${item.namespace}.${item.table}` : '';
+                            const isCopied = copiedNodeInfo === fullName && isTableOrView;
 
                             return (
                                 <div
                                     key={idx}
                                     className={styles.treeRow}
-                                    style={{ paddingLeft: '12px', cursor: item.type === 'table' ? 'pointer' : 'default' }}
-                                    onClick={item.type === 'table' ? () => handleCopySearchNode(item) : undefined}
-                                    title={item.type === 'table' ? "Click to copy table name" : undefined}
+                                    style={{ paddingLeft: '12px', cursor: isTableOrView ? 'pointer' : 'default' }}
+                                    onClick={isTableOrView ? () => handleCopySearchNode(item) : undefined}
+                                    title={isTableOrView ? "Click to copy name" : undefined}
                                 >
                                     {item.type === 'catalog' && <Database size={14} className={styles.icon} color="#38bdf8" />}
                                     {item.type === 'namespace' && <Folder size={14} className={styles.icon} color="#fbbf24" />}
                                     {item.type === 'table' && (
                                         isCopied ? <Check size={14} className={styles.icon} color="#10b981" /> : <Table size={14} className={styles.icon} color="#a78bfa" />
                                     )}
+                                    {item.type === 'view' && (
+                                        isCopied ? <Check size={14} className={styles.icon} color="#10b981" /> : <Eye size={14} className={styles.icon} color="#a78bfa" />
+                                    )}
 
                                     <span className="truncate" style={{ marginLeft: '6px' }}>
                                         {item.type === 'catalog' && item.catalog}
                                         {item.type === 'namespace' && `${item.catalog}.${item.namespace}`}
-                                        {item.type === 'table' && fullName}
+                                        {isTableOrView && fullName}
                                     </span>
 
-                                    {item.type === 'table' && onTableOverview && onShowDdl && (
+                                    {isTableOrView && onTableOverview && onShowDdl && (
                                         <TableMenu
                                             catalog={item.catalog}
                                             namespace={item.namespace}
                                             table={item.table}
+                                            isView={item.type === 'view'}
                                             onTableOverview={onTableOverview}
                                             onShowDdl={onShowDdl}
                                         />
