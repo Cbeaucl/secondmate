@@ -7,7 +7,7 @@ import { JsonView } from '../Results/JsonView';
 import { SteamboatLoader } from '../SteamboatLoader';
 import { Play, Table, FileJson, History, Settings, AlertTriangle } from 'lucide-react';
 import styles from './Workspace.module.css';
-import { api, type QueryResult, type ConfigOption } from '../../services/api';
+import { api, type ConfigOption } from '../../services/api';
 import { useJobQueue } from '../../hooks/useJobQueue';
 import { QueryHistory } from '../History/QueryHistory';
 import { ConfigModal } from '../Editor/ConfigModal';
