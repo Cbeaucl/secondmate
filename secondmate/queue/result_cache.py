@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 class ResultCache(Protocol):
     """Protocol for result cache implementations."""
 
+    def initialize(self, spark: SparkSession) -> None:
+        """Perform any one-time setup (e.g., creating namespaces). Called at startup."""
+        ...
+
     def save(self, job_id: str, df: DataFrame) -> None:
         """Persist the DataFrame result for a given job."""
         ...
@@ -47,6 +51,15 @@ class IcebergResultCache:
     def __init__(self, catalog: str = "user", namespace: str = "secondmate"):
         self.catalog = catalog
         self.namespace = namespace
+
+    def initialize(self, spark: SparkSession) -> None:
+        """Create the target namespace if it doesn't exist."""
+        fqn = f"{self.catalog}.{self.namespace}"
+        try:
+            spark.sql(f"CREATE NAMESPACE IF NOT EXISTS {fqn}")
+            logger.info(f"Ensured namespace {fqn} exists")
+        except Exception:
+            logger.warning(f"Could not create namespace {fqn}", exc_info=True)
 
     def _table_name(self, job_id: str) -> str:
         safe_id = _sanitize_table_name(job_id)

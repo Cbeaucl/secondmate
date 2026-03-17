@@ -28,6 +28,10 @@ logger = logging.getLogger(__name__)
 # Path for the job queue SQLite database
 QUEUE_DB_PATH = os.getenv("SECONDMATE_QUEUE_DB", "job_queue.db")
 
+# Iceberg result cache location (configurable)
+RESULT_CATALOG = os.getenv("SECONDMATE_RESULT_CATALOG", "user")
+RESULT_NAMESPACE = os.getenv("SECONDMATE_RESULT_NAMESPACE", "secondmate")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Ensure table exists and has data
@@ -40,14 +44,11 @@ async def lifespan(app: FastAPI):
 
     # Initialize the job queue
     db_path = init_db(QUEUE_DB_PATH)
-    result_cache = IcebergResultCache()
+    result_cache = IcebergResultCache(catalog=RESULT_CATALOG, namespace=RESULT_NAMESPACE)
     configure_jobs(db_path, result_cache)
 
-    # Ensure the secondmate namespace exists for result storage
-    try:
-        spark.sql("CREATE NAMESPACE IF NOT EXISTS user.secondmate")
-    except Exception:
-        logger.warning("Could not create users.secondmate namespace", exc_info=True)
+    # Let the result cache perform any setup it needs (e.g., create namespaces)
+    result_cache.initialize(spark)
 
     # Start the background job runner
     runner_task = asyncio.create_task(
