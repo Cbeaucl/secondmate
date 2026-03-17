@@ -7,17 +7,14 @@ import { JsonView } from '../Results/JsonView';
 import { SteamboatLoader } from '../SteamboatLoader';
 import { Play, Table, FileJson, History, Settings, AlertTriangle } from 'lucide-react';
 import styles from './Workspace.module.css';
-import { api, type QueryResult, type ConfigOption } from '../../services/api';
-import { useQueryHistory } from '../../hooks/useQueryHistory';
+import { api, type ConfigOption } from '../../services/api';
+import { useJobQueue } from '../../hooks/useJobQueue';
 import { QueryHistory } from '../History/QueryHistory';
 import { ConfigModal } from '../Editor/ConfigModal';
 import logoUrl from '../../assets/logo.png';
 
 export const Workspace: React.FC = () => {
     const [query, setQuery] = useState('-- Write your SparkSQL here\nSELECT * FROM user.sales.transactions LIMIT 100;');
-    const [result, setResult] = useState<QueryResult | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [hasRun, setHasRun] = useState(false);
     const [viewMode, setViewMode] = useState<'table' | 'json'>('table');
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
@@ -25,7 +22,7 @@ export const Workspace: React.FC = () => {
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
     const historyPanelRef = useRef<ImperativePanelHandle>(null);
-    const { history, addEntry, clearHistory } = useQueryHistory();
+    const { jobs, selectedJob, selectedJobResult, isLoadingResult, submitJob, selectJob } = useJobQueue();
 
     const fetchConfigs = async () => {
         try {
@@ -46,21 +43,19 @@ export const Workspace: React.FC = () => {
 
     const handleRunQuery = async () => {
         if (!query.trim()) return;
-        setLoading(true);
-        setHasRun(true);
-        setResult(null);
+        await submitJob(query);
 
-        // Add to history
-        addEntry(query);
-
-        try {
-            const data = await api.executeQuery(query);
-            setResult(data);
-        } catch (err) {
-            setResult({ error: err instanceof Error ? err.message : 'An error occurred' });
-        } finally {
-            setLoading(false);
+        // Open the history panel if closed
+        const panel = historyPanelRef.current;
+        if (panel && panel.isCollapsed()) {
+            panel.expand();
         }
+    };
+
+    const handleSelectJob = (job: typeof selectedJob extends infer T ? NonNullable<T> : never) => {
+        // Populate editor with the job's query
+        setQuery(job.query_text);
+        selectJob(job);
     };
 
     const toggleHistory = () => {
@@ -74,13 +69,19 @@ export const Workspace: React.FC = () => {
         }
     };
 
+    // Determine what to show in the result area
+    const isJobActive = selectedJob && (selectedJob.status === 'queued' || selectedJob.status === 'running');
+    const isJobFailed = selectedJob && selectedJob.status === 'failed';
+    const isJobSucceeded = selectedJob && selectedJob.status === 'succeeded';
+    const hasResults = isJobSucceeded && selectedJobResult?.data && selectedJobResult?.schema;
+
     return (
         <div className={styles.workspace}>
             <div className={styles.toolbar}>
                 <button
                     className={`${styles.runButton} ${missingRequiredConfigs.length > 0 ? styles.runButtonWarning : ''}`}
                     onClick={handleRunQuery}
-                    disabled={loading || missingRequiredConfigs.length > 0}
+                    disabled={missingRequiredConfigs.length > 0}
                     title={missingRequiredConfigs.length > 0 ? "Missing required configurations. Please update settings before running." : ""}
                 >
                     {missingRequiredConfigs.length > 0 ? (
@@ -88,7 +89,7 @@ export const Workspace: React.FC = () => {
                     ) : (
                         <Play size={14} fill="currentColor" />
                     )}
-                    <span>{loading ? 'Running...' : 'Run'}</span>
+                    <span>Run</span>
                 </button>
 
                 {configs.length > 0 && (
@@ -104,10 +105,10 @@ export const Workspace: React.FC = () => {
                 <button
                     className={`${styles.historyToggleButton} ${isHistoryOpen ? styles.historyToggleButtonActive : ''}`}
                     onClick={toggleHistory}
-                    title="Toggle Query History"
+                    title="Toggle Query Queue"
                 >
                     <History size={14} />
-                    <span>History</span>
+                    <span>Queue</span>
                 </button>
             </div>
 
@@ -135,7 +136,7 @@ export const Workspace: React.FC = () => {
                                     <div className={styles.resultsHeader}>
                                         <div className={styles.headerLeft}>
                                             <span>Query Results</span>
-                                            {result?.data && (
+                                            {hasResults && (
                                                 <div className={styles.viewToggle}>
                                                     <button
                                                         className={`${styles.toggleButton} ${viewMode === 'table' ? styles.toggleButtonActive : ''}`}
@@ -156,14 +157,15 @@ export const Workspace: React.FC = () => {
                                                 </div>
                                             )}
                                         </div>
-                                        {result?.data && (
+                                        {hasResults && selectedJobResult?.data && (
                                             <span className={styles.meta}>
-                                                {result.data.length} rows retrieved
+                                                {selectedJobResult.data.length} rows retrieved
                                             </span>
                                         )}
                                     </div>
 
-                                    {!hasRun && (
+                                    {/* No job selected — welcome state */}
+                                    {!selectedJob && (
                                         <div className={styles.emptyState}>
                                             <img src={logoUrl} alt="SecondMate Logo" style={{ maxWidth: '400px', width: '100%', marginBottom: '1rem', objectFit: 'contain' }} />
                                             <div className={styles.emptyStateMain}>
@@ -172,22 +174,25 @@ export const Workspace: React.FC = () => {
                                         </div>
                                     )}
 
-                                    {loading && (
+                                    {/* Queued or Running state */}
+                                    {(isJobActive || isLoadingResult) && (
                                         <SteamboatLoader />
                                     )}
 
-                                    {hasRun && !loading && result?.error && (
+                                    {/* Failed state */}
+                                    {isJobFailed && selectedJobResult?.error && (
                                         <div className={styles.errorContainer}>
                                             <h3 className={styles.errorHeading}>Error</h3>
-                                            <pre className={styles.errorText}>{result.error}</pre>
+                                            <pre className={styles.errorText}>{selectedJobResult.error}</pre>
                                         </div>
                                     )}
 
-                                    {hasRun && !loading && result?.data && result.schema && (
+                                    {/* Succeeded state */}
+                                    {hasResults && !isLoadingResult && (
                                         viewMode === 'table' ? (
-                                            <DataGrid columns={result.schema} data={result.data} />
+                                            <DataGrid columns={selectedJobResult!.schema!} data={selectedJobResult!.data!} />
                                         ) : (
-                                            <JsonView data={result.data} />
+                                            <JsonView data={selectedJobResult!.data!} />
                                         )
                                     )}
                                 </div>
@@ -207,9 +212,9 @@ export const Workspace: React.FC = () => {
                         onExpand={() => setIsHistoryOpen(true)}
                     >
                         <QueryHistory
-                            history={history}
-                            onSelectQuery={(q) => setQuery(q)}
-                            onClearHistory={clearHistory}
+                            jobs={jobs}
+                            selectedJobId={selectedJob?.job_id ?? null}
+                            onSelectJob={handleSelectJob}
                             onClose={() => historyPanelRef.current?.collapse()}
                         />
                     </Panel>

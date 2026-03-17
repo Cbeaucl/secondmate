@@ -35,6 +35,18 @@ export interface ConfigOption {
     is_required: boolean;
 }
 
+export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
+export interface Job {
+    job_id: string;
+    query_text: string;
+    status: JobStatus;
+    error_message: string | null;
+    created_at: number;
+    started_at: number | null;
+    completed_at: number | null;
+}
+
 declare global {
     interface Window {
         SECONDMATE_CONFIG?: {
@@ -47,17 +59,43 @@ const API_BASE_URL = window.SECONDMATE_CONFIG?.apiBaseUrl || '/api'; // Proxied 
 
 
 export const api = {
-    executeQuery: async (query: string): Promise<QueryResult> => {
-        const response = await fetch(`${API_BASE_URL}/query/execute`, {
+    // --- Job Queue Endpoints ---
+
+    submitJob: async (query: string): Promise<{ job_id: string; status: string }> => {
+        const response = await fetch(`${API_BASE_URL}/jobs/submit`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query })
         });
         if (!response.ok) {
-            return { error: `Error executing query: ${response.statusText}` };
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Failed to submit job');
         }
         return await response.json();
     },
+
+    listJobs: async (): Promise<{ jobs: Job[] }> => {
+        const response = await fetch(`${API_BASE_URL}/jobs`);
+        if (!response.ok) throw new Error('Failed to fetch jobs');
+        return await response.json();
+    },
+
+    getJob: async (jobId: string): Promise<Job> => {
+        const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`);
+        if (!response.ok) throw new Error('Failed to fetch job');
+        return await response.json();
+    },
+
+    getJobResults: async (jobId: string): Promise<QueryResult> => {
+        const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/results`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            return { error: errorData.detail || 'Failed to fetch results' };
+        }
+        return await response.json();
+    },
+
+    // --- Catalog Endpoints ---
 
     getCatalogs: async (): Promise<string[]> => {
         const response = await fetch(`${API_BASE_URL}/catalogs`);
@@ -153,10 +191,3 @@ export const api = {
         }
     }
 };
-
-// Backwards compatibility alias if needed, or just export it as part of api object above.
-// But existing code uses `import { fetchQueryData } from ...`.
-// So we should export `fetchQueryData` as standalone too, or refactor existing code.
-// Let's keep `fetchQueryData` as a standalone export for now to avoid breaking DataViewer.
-
-

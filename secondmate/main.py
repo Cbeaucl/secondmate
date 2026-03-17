@@ -1,16 +1,13 @@
 from fastapi import FastAPI, Depends, APIRouter, HTTPException
 from pyspark.sql import SparkSession
 from secondmate.dependencies import get_spark_session
+import asyncio
 import sys
 import os
 import logging
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
-
-# Hack to make sure pyspark finds the right python executable if needed, 
-# or relying on environment. 
-# For local spark, PYSPARK_PYTHON usually defaults to sys.executable
 
 from contextlib import asynccontextmanager
 from secondmate.dependencies import get_spark_provider
@@ -21,8 +18,19 @@ from secondmate.models import ConfigOption
 from typing import Dict, Any, List
 from secondmate.utils import sanitize_for_serialization, validate_identifier
 from secondmate.routers.table import router as table_router
-import logging
+from secondmate.routers.jobs import router as jobs_router, configure as configure_jobs
+from secondmate.queue.db import init_db
+from secondmate.queue.runner import run_job_loop
+from secondmate.queue.result_cache import IcebergResultCache
+
 logger = logging.getLogger(__name__)
+
+# Path for the job queue SQLite database
+QUEUE_DB_PATH = os.getenv("SECONDMATE_QUEUE_DB", "job_queue.db")
+
+# Iceberg result cache location (configurable)
+RESULT_CATALOG = os.getenv("SECONDMATE_RESULT_CATALOG", "user")
+RESULT_NAMESPACE = os.getenv("SECONDMATE_RESULT_NAMESPACE", "secondmate")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,41 +42,33 @@ async def lifespan(app: FastAPI):
     if isinstance(provider, LocalSparkProvider):
         initialize_dev_data(spark)
 
+    # Initialize the job queue
+    db_path = init_db(QUEUE_DB_PATH)
+    result_cache = IcebergResultCache(catalog=RESULT_CATALOG, namespace=RESULT_NAMESPACE)
+    configure_jobs(db_path, result_cache)
+
+    # Let the result cache perform any setup it needs (e.g., create namespaces)
+    result_cache.initialize(spark)
+
+    # Start the background job runner
+    runner_task = asyncio.create_task(
+        run_job_loop(db_path, get_spark_provider, result_cache)
+    )
+
     yield
-    # Shutdown logic if needed
+
+    # Shutdown: cancel the runner
+    runner_task.cancel()
+    try:
+        await runner_task
+    except asyncio.CancelledError:
+        pass
 
 app = FastAPI(title="SecondMate Backend", lifespan=lifespan)
 router = APIRouter()
 
-class QueryRequest(BaseModel):
-    query: str
-
-@router.post("/query/execute")
-def execute_query(request: QueryRequest, provider = Depends(get_spark_provider)):
-    """Execute a raw SQL query and return results."""
-    # Validate required configs
-    configs = provider.get_configs()
-    for config in configs:
-        if config.is_required and (config.current_value is None or config.current_value == ""):
-            raise HTTPException(status_code=400, detail=f"Required configuration '{config.label}' is missing.")
-
-    try:
-        spark = provider.get_session()
-        df = spark.sql(request.query)
-        # Limit to 1000 to prevent overloading
-        df = df.limit(1000)
-        
-        # Get schema
-        schema = [{"name": field.name, "type": str(field.dataType)} for field in df.schema.fields]
-        
-        # Get data
-        data = [row.asDict(recursive=True) for row in df.collect()]
-        data = sanitize_for_serialization(data)
-        
-        return {"schema": schema, "data": data}
-    except Exception as e:
-        logger.error("Error executing query", exc_info=True)
-        return {"error": str(e)}
+# Note: The synchronous /query/execute endpoint has been replaced by the
+# async job queue system. Use POST /api/jobs/submit to submit queries.
 
 @router.get("/catalogs")
 def get_catalogs(spark: SparkSession = Depends(get_spark_session)):
@@ -215,9 +215,10 @@ def search_catalog(q: str, spark: SparkSession = Depends(get_spark_session)):
 
     return {"results": results}
 
-# Include the API router
+# Include the API routers
 app.include_router(router, prefix="/api")
 app.include_router(table_router, prefix="/api")
+app.include_router(jobs_router, prefix="/api")
 
 # Mount static files
 # Use environment variable or fallback to local assumption

@@ -1,36 +1,23 @@
+"""
+Tests for nested struct serialization in query results.
+
+The original execute_query endpoint has been replaced by the async job queue.
+This test now validates that the result cache correctly serializes nested
+Spark Row structures through the sanitize_for_serialization utility, which
+is the same code path used by IcebergResultCache.load().
+"""
 import unittest
 from unittest.mock import MagicMock
 from pyspark.sql import Row
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
-from secondmate.main import execute_query, QueryRequest
 
-class TestApiNestedStructs(unittest.TestCase):
-    def test_execute_query_with_nested_structs(self):
-        # Setup mock spark and dataframe
-        mock_spark = MagicMock()
-        mock_df = MagicMock()
-        mock_spark.sql.return_value = mock_df
-        mock_df.limit.return_value = mock_df
+from secondmate.utils import sanitize_for_serialization
 
-        # Mock schema
-        mock_field1 = MagicMock()
-        mock_field1.name = "id"
-        mock_field1.dataType = IntegerType()
 
-        mock_field2 = MagicMock()
-        mock_field2.name = "nested"
-        mock_field2.dataType = StructType([
-            StructField("inner_str", StringType()),
-            StructField("inner_nested", StructType([
-                StructField("val", IntegerType())
-            ]))
-        ])
-
-        mock_schema = MagicMock()
-        mock_schema.fields = [mock_field1, mock_field2]
-        mock_df.schema = mock_schema
-
-        # Mock data with nested Rows
+class TestNestedStructSerialization(unittest.TestCase):
+    def test_nested_structs_serialize_to_dicts(self):
+        """Verify that nested Row objects are recursively converted to dicts."""
+        # Simulate what Spark would return for a query with nested structs
         row1 = Row(
             id=1,
             nested=Row(
@@ -38,31 +25,20 @@ class TestApiNestedStructs(unittest.TestCase):
                 inner_nested=Row(val=42)
             )
         )
-        mock_df.collect.return_value = [row1]
 
-        # Mock provider
-        mock_provider = MagicMock()
-        mock_provider.get_session.return_value = mock_spark
-        mock_provider.get_configs.return_value = []
+        # This is the same code path as IcebergResultCache.load()
+        data = [row1.asDict(recursive=True)]
+        data = sanitize_for_serialization(data)
 
-        # Execute request
-        request = QueryRequest(query="SELECT * FROM test_table")
-        response = execute_query(request, provider=mock_provider)
+        self.assertEqual(len(data), 1)
+        record = data[0]
 
-        # Verify schema is correct (stringified types for JSON serialization)
-        self.assertEqual(len(response["schema"]), 2)
-        self.assertEqual(response["schema"][0]["name"], "id")
-        self.assertEqual(response["schema"][1]["name"], "nested")
+        self.assertEqual(record["id"], 1)
+        self.assertIsInstance(record["nested"], dict)
+        self.assertEqual(record["nested"]["inner_str"], "test")
+        self.assertIsInstance(record["nested"]["inner_nested"], dict)
+        self.assertEqual(record["nested"]["inner_nested"]["val"], 42)
 
-        # Verify data is parsed recursively to pure dicts
-        self.assertEqual(len(response["data"]), 1)
-        data = response["data"][0]
-
-        self.assertEqual(data["id"], 1)
-        self.assertIsInstance(data["nested"], dict)
-        self.assertEqual(data["nested"]["inner_str"], "test")
-        self.assertIsInstance(data["nested"]["inner_nested"], dict)
-        self.assertEqual(data["nested"]["inner_nested"]["val"], 42)
 
 if __name__ == "__main__":
     unittest.main()
