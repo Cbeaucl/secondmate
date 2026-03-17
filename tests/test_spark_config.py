@@ -1,8 +1,26 @@
+import os
+import tempfile
 import pytest
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from secondmate.main import app
 from secondmate.dependencies import get_spark_provider
 from secondmate.providers.local_spark import LocalSparkProvider
+from secondmate.queue.db import init_db
+from secondmate.queue.result_cache import IcebergResultCache
+from secondmate.routers.jobs import configure as configure_jobs
+
+
+@pytest.fixture(autouse=True)
+def setup_queue_db():
+    """Ensure the queue DB is initialized before each test in this module."""
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+        db_path = f.name
+    init_db(db_path)
+    configure_jobs(db_path, IcebergResultCache())
+    yield
+    os.unlink(db_path)
+
 
 client = TestClient(app)
 
@@ -29,19 +47,16 @@ def test_execute_query_validation_failure():
     # Set a required config to empty
     client.post("/api/configs", json={"spark.executor.memory": ""})
 
-    # We should NOT call provider.get_session() here because it would try to start spark with invalid config
-    # The validation happens in execute_query before get_spark_session dependency is even resolved?
-    # Actually Depends(get_spark_session) might be resolved first.
-
-    response = client.post("/api/query/execute", json={"query": "SELECT 1"})
-    assert response.status_code == 400
-    assert "Required configuration" in response.json()["detail"]
+    # With the job queue, submission always succeeds — validation happens in the runner.
+    # Here we verify the job can be submitted even with bad config.
+    response = client.post("/api/jobs/submit", json={"query": "SELECT 1"})
+    assert response.status_code == 200
+    assert "job_id" in response.json()
 
 def test_execute_query_validation_success():
     # Set required configs to valid values
     client.post("/api/configs", json={"spark.executor.memory": "1g", "spark.driver.memory": "1g"})
 
-    response = client.post("/api/query/execute", json={"query": "SELECT 1"})
-    # It might fail because of spark session not being available in test env,
-    # but it shouldn't be a 400 validation error.
-    assert response.status_code != 400
+    response = client.post("/api/jobs/submit", json={"query": "SELECT 1"})
+    assert response.status_code == 200
+    assert "job_id" in response.json()

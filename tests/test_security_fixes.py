@@ -1,7 +1,7 @@
 
 import unittest
 from unittest.mock import MagicMock
-from secondmate.main import execute_query, get_catalogs, get_namespaces, get_tables, search_catalog, QueryRequest
+from secondmate.main import get_catalogs, get_namespaces, get_tables, search_catalog
 
 class TestSecurityFixes(unittest.TestCase):
     def setUp(self):
@@ -12,17 +12,9 @@ class TestSecurityFixes(unittest.TestCase):
         self.sensitive_info = "Sensitive Path: /etc/passwd"
         self.exception = Exception(f"Database error: {self.sensitive_info}")
 
-    def test_execute_query_secure(self):
-        self.mock_spark.sql.side_effect = self.exception
-        request = QueryRequest(query="SELECT * FROM users")
-
-        response = execute_query(request, provider=self.mock_provider)
-
-        self.assertIn("error", response)
-        # Note: The query execution endpoint intentionally propagates actual errors
-        # to assist users with debugging SQL queries.
-        self.assertEqual(response["error"], str(self.exception))
-        self.assertIn(self.sensitive_info, response["error"])
+    # Note: execute_query has been replaced by the async job queue system.
+    # Security for query execution errors is now handled by the job runner,
+    # which stores error messages in the SQLite queue (tested in test_runner.py).
 
     def test_get_catalogs_secure(self):
         self.mock_spark.sql.side_effect = self.exception
