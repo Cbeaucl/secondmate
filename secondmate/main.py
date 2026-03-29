@@ -5,6 +5,7 @@ import asyncio
 import sys
 import os
 import logging
+import json
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
@@ -264,7 +265,11 @@ if os.path.exists(static_dir):
                 clean_prefix = proxy_prefix.rstrip("/")
                 api_base = f"{clean_prefix}/api"
 
-            injection = f'<script>window.SECONDMATE_CONFIG = {{ apiBaseUrl: "{api_base}" }};</script>'
+            config = {"apiBaseUrl": api_base}
+            # Secure serialization: JSON encode and escape < to prevent script tag breakout
+            injection_json = json.dumps(config).replace("<", "\\u003c")
+            injection = f"<script>window.SECONDMATE_CONFIG = {injection_json};</script>"
+
             # Inject before </head>
             content = content.replace("</head>", f"{injection}</head>")
             
