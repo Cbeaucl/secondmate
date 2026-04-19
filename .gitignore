@@ -44,7 +44,7 @@ derby.log
 *.parquet
 *.avro
 iceberg_catalog.db
-
+job_queue.db
 # Frontend Build Artifacts
 secondmate/static/
 

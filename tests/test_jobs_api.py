@@ -116,3 +116,25 @@ class TestGetJobResults:
     def test_results_for_nonexistent_job(self, client):
         response = client.get("/api/jobs/nonexistent/results")
         assert response.status_code == 404
+
+    def test_results_with_large_integer(self, client, db_path, mock_result_cache):
+        # Setup mock to return an integer larger than JavaScript's 53-bit MAX_SAFE_INTEGER
+        large_int = 12345678901234567890
+        mock_result_cache.load.return_value = (
+            [{"name": "big_id", "type": "LongType"}],
+            [{"big_id": large_int}],
+        )
+        job_id = generate_job_id()
+        insert_job(db_path, job_id, "SELECT 1")
+        claim_next_job(db_path)
+        update_job_status(db_path, job_id, "succeeded")
+
+        response = client.get(f"/api/jobs/{job_id}/results")
+        assert response.status_code == 200
+        
+        # Verify Python's JSON correctly dumped the literal large integer string natively
+        assert str(large_int) in response.text
+        
+        # Verify the python test client parsed it back exactly
+        data = response.json()
+        assert data["data"][0]["big_id"] == large_int

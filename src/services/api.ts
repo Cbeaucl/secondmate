@@ -1,3 +1,17 @@
+import JSONBig from 'json-bigint';
+
+const JSONParser = JSONBig({ storeAsString: true });
+
+async function parseJsonResponse(response: Response) {
+    const text = await response.text();
+    if (!text) return {};
+    try {
+        return JSONParser.parse(text);
+    } catch (e) {
+        return JSON.parse(text); // Fallback to standard parser just in case
+    }
+}
+
 export interface Column {
     name: string;
     type: string;
@@ -68,31 +82,31 @@ export const api = {
             body: JSON.stringify({ query })
         });
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
+            const errorData = await parseJsonResponse(response).catch(() => ({}));
             throw new Error(errorData.detail || 'Failed to submit job');
         }
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     listJobs: async (): Promise<{ jobs: Job[] }> => {
         const response = await fetch(`${API_BASE_URL}/jobs`);
         if (!response.ok) throw new Error('Failed to fetch jobs');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     getJob: async (jobId: string): Promise<Job> => {
         const response = await fetch(`${API_BASE_URL}/jobs/${jobId}`);
         if (!response.ok) throw new Error('Failed to fetch job');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     getJobResults: async (jobId: string): Promise<QueryResult> => {
         const response = await fetch(`${API_BASE_URL}/jobs/${jobId}/results`);
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
+            const errorData = await parseJsonResponse(response).catch(() => ({}));
             return { error: errorData.detail || 'Failed to fetch results' };
         }
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     // --- Catalog Endpoints ---
@@ -100,83 +114,83 @@ export const api = {
     getCatalogs: async (): Promise<string[]> => {
         const response = await fetch(`${API_BASE_URL}/catalogs`);
         if (!response.ok) throw new Error('Failed to fetch catalogs');
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
         return data.catalogs;
     },
 
     getNamespaces: async (catalogName: string): Promise<string[]> => {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces`);
         if (!response.ok) throw new Error('Failed to fetch namespaces');
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
         return data.namespaces;
     },
 
     getTables: async (catalogName: string, namespace: string): Promise<{name: string, type: 'table' | 'view'}[]> => {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables`);
         if (!response.ok) throw new Error('Failed to fetch tables');
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
         return data.items;
     },
 
     searchCatalog: async (query: string): Promise<any[]> => {
         const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
         if (!response.ok) throw new Error('Failed to search catalog');
-        const data = await response.json();
+        const data = await parseJsonResponse(response);
         return data.results;
     },
 
     getSystemInfo: async (): Promise<SystemInfo> => {
         const response = await fetch(`${API_BASE_URL}/info`);
         if (!response.ok) throw new Error('Failed to fetch system info');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     getTableSchema: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/schema`);
         if (!response.ok) throw new Error('Failed to fetch table schema');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     getTableProperties: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/properties`);
         if (!response.ok) throw new Error('Failed to fetch table properties');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     getTableSnapshots: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/snapshots`);
         if (!response.ok) throw new Error('Failed to fetch table snapshots');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     getTablePartitions: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/partitions`);
         if (!response.ok) throw new Error('Failed to fetch table partitions');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     getTableFiles: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/files`);
         if (!response.ok) throw new Error('Failed to fetch table files');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     getTableMetrics: async (catalogName: string, namespace: string, tableName: string): Promise<any> => {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/metrics`);
         if (!response.ok) throw new Error('Failed to fetch table metrics');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     getTableDdl: async (catalogName: string, namespace: string, tableName: string): Promise<{ ddl: string }> => {
         const response = await fetch(`${API_BASE_URL}/catalogs/${catalogName}/namespaces/${namespace}/tables/${tableName}/ddl`);
         if (!response.ok) throw new Error('Failed to fetch table DDL');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     getConfigs: async (): Promise<ConfigOption[]> => {
         const response = await fetch(`${API_BASE_URL}/configs`);
         if (!response.ok) throw new Error('Failed to fetch configs');
-        return await response.json();
+        return await parseJsonResponse(response);
     },
 
     saveConfigs: async (configs: Record<string, any>): Promise<void> => {
@@ -186,7 +200,7 @@ export const api = {
             body: JSON.stringify(configs)
         });
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
+            const errorData = await parseJsonResponse(response).catch(() => ({}));
             throw new Error(errorData.detail || 'Failed to save configs');
         }
     }
