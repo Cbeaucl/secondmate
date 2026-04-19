@@ -10,7 +10,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from secondmate.queue import db as queue_db
-from secondmate.queue.result_cache import ResultCache, IcebergResultCache
+from secondmate.queue.result_cache import ResultCache
+from secondmate.queue.iceberg_result_cache import IcebergResultCache
 from secondmate.dependencies import get_spark_provider
 from secondmate.utils import sanitize_for_serialization
 
@@ -20,7 +21,7 @@ router = APIRouter()
 
 # These will be set during app startup via configure()
 _db_path: str = ""
-_result_cache: ResultCache = IcebergResultCache()
+_result_cache: ResultCache | None = None
 
 
 def configure(db_path: str, result_cache: ResultCache):

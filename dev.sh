@@ -61,6 +61,9 @@ trap cleanup SIGINT SIGTERM EXIT
 
 echo "Starting SecondMate Development Environment..."
 
+export SECONDMATE_RESULT_CATALOG="user"
+export SECONDMATE_RESULT_NAMESPACE="secondmate"
+
 # Start Backend
 echo "Starting Backend (FastAPI)..."
 (

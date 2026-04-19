@@ -7,7 +7,7 @@ from secondmate.main import app
 from secondmate.dependencies import get_spark_provider
 from secondmate.providers.local_spark import LocalSparkProvider
 from secondmate.queue.db import init_db
-from secondmate.queue.result_cache import IcebergResultCache
+from secondmate.queue.iceberg_result_cache import IcebergResultCache
 from secondmate.routers.jobs import configure as configure_jobs
 
 
@@ -17,7 +17,7 @@ def setup_queue_db():
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         db_path = f.name
     init_db(db_path)
-    configure_jobs(db_path, IcebergResultCache())
+    configure_jobs(db_path, IcebergResultCache("test_catalog", "test_namespace"))
     yield
     os.unlink(db_path)
 

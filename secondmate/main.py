@@ -21,19 +21,22 @@ from secondmate.routers.table import router as table_router
 from secondmate.routers.jobs import router as jobs_router, configure as configure_jobs
 from secondmate.queue.db import init_db
 from secondmate.queue.runner import run_job_loop
-from secondmate.queue.result_cache import IcebergResultCache
-
+from secondmate.queue.iceberg_result_cache import IcebergResultCache
 logger = logging.getLogger(__name__)
 
 # Path for the job queue SQLite database
 QUEUE_DB_PATH = os.getenv("SECONDMATE_QUEUE_DB", "job_queue.db")
 
 # Iceberg result cache location (configurable)
-RESULT_CATALOG = os.getenv("SECONDMATE_RESULT_CATALOG", "user")
-RESULT_NAMESPACE = os.getenv("SECONDMATE_RESULT_NAMESPACE", "secondmate")
+RESULT_CATALOG = os.getenv("SECONDMATE_RESULT_CATALOG")
+RESULT_NAMESPACE = os.getenv("SECONDMATE_RESULT_NAMESPACE")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if not RESULT_CATALOG or not RESULT_NAMESPACE:
+        print("ERROR: SECONDMATE_RESULT_CATALOG and SECONDMATE_RESULT_NAMESPACE environment variables must be set.", file=sys.stderr)
+        sys.exit(1)
+
     # Startup: Ensure table exists and has data
     provider = get_spark_provider()
     spark = provider.get_session()
