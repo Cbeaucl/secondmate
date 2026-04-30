@@ -21,6 +21,11 @@ def create_mock_provider(is_local: bool):
     mock_spark.catalog.tableExists.return_value = False  # Always say table doesn't exist so it tries to create
     mock_spark.table.return_value.count.return_value = 0
 
+    # Mock SHOW NAMESPACES to always return a dummy list so initialize passes
+    mock_res = MagicMock()
+    mock_res.collect.return_value = [MagicMock()]
+    mock_spark.sql.return_value = mock_res
+
     return provider, mock_spark
 
 
