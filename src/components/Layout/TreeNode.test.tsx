@@ -35,8 +35,9 @@ describe('TreeNode Component', () => {
         expect(screen.queryByTestId('child-node')).not.toBeInTheDocument();
     });
 
-    it('shows TableMenu for table types when onTableOverview is provided', () => {
+    it('shows TableMenu for table types when onTableOverview and onShowDdl are provided', () => {
         const handleTableOverview = vi.fn();
+        const handleShowDdl = vi.fn();
         render(
             <TreeNode
                 label="test-table"
@@ -44,6 +45,7 @@ describe('TreeNode Component', () => {
                 catalog="test-catalog"
                 namespace="test-namespace"
                 onTableOverview={handleTableOverview}
+                onShowDdl={handleShowDdl}
             />
         );
 
@@ -54,6 +56,7 @@ describe('TreeNode Component', () => {
 
     it('does not show TableMenu for non-table types', () => {
         const handleTableOverview = vi.fn();
+        const handleShowDdl = vi.fn();
         render(
             <TreeNode
                 label="test-catalog"
@@ -61,6 +64,7 @@ describe('TreeNode Component', () => {
                 catalog="test-catalog"
                 namespace="test-namespace"
                 onTableOverview={handleTableOverview}
+                onShowDdl={handleShowDdl}
             />
         );
 
