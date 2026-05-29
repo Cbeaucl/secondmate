@@ -3,7 +3,7 @@ import { api } from './api';
 
 describe('api service', () => {
     beforeEach(() => {
-        global.fetch = vi.fn();
+        globalThis.fetch = vi.fn();
     });
 
     it('should accurately parse bigints without losing precision', async () => {
@@ -15,7 +15,7 @@ describe('api service', () => {
         });
 
         // @ts-ignore
-        global.fetch.mockResolvedValue(mockResponse);
+        globalThis.fetch.mockResolvedValue(mockResponse);
 
         const results = await api.getJobResults('any_job_id');
         

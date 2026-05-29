@@ -25,13 +25,19 @@ class IcebergResultCache(ResultCache):
         self.namespace = namespace
 
     def initialize(self, spark: SparkSession) -> None:
-        """Create the target namespace if it doesn't exist."""
+        """Check if the target catalog and namespace exist."""
         fqn = f"{self.catalog}.{self.namespace}"
         try:
-            spark.sql(f"CREATE NAMESPACE IF NOT EXISTS {fqn}")
-            logger.info(f"Ensured namespace {fqn} exists")
-        except Exception:
-            logger.warning(f"Could not create namespace {fqn}", exc_info=True)
+            res = spark.sql(f"SHOW NAMESPACES IN {self.catalog} LIKE '{self.namespace}'").collect()
+            if len(res) == 0:
+                logger.warning(f"Result namespace {fqn} does not exist.")
+                raise RuntimeError(f"Namespace {fqn} does not exist.")
+            logger.info(f"Verified namespace {fqn} exists")
+        except Exception as e:
+            if isinstance(e, RuntimeError):
+                raise
+            logger.warning(f"Result catalog or namespace {fqn} could not be found or verified.", exc_info=True)
+            raise RuntimeError(f"Catalog or namespace {fqn} does not exist or is invalid.") from e
 
     def _table_name(self, job_id: str) -> str:
         safe_id = _sanitize_table_name(job_id)
